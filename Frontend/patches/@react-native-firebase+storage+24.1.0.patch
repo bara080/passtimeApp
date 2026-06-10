@@ -1,0 +1,544 @@
+diff --git a/node_modules/@react-native-firebase/storage/android/build/.transforms/5a2a29f6539bf7196604b833e371853c/results.bin b/node_modules/@react-native-firebase/storage/android/build/.transforms/5a2a29f6539bf7196604b833e371853c/results.bin
+new file mode 100644
+index 0000000..0d259dd
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/.transforms/5a2a29f6539bf7196604b833e371853c/results.bin
+@@ -0,0 +1 @@
++o/classes
+diff --git a/node_modules/@react-native-firebase/storage/android/build/.transforms/5a2a29f6539bf7196604b833e371853c/transformed/classes/classes_dex/classes.dex b/node_modules/@react-native-firebase/storage/android/build/.transforms/5a2a29f6539bf7196604b833e371853c/transformed/classes/classes_dex/classes.dex
+new file mode 100644
+index 0000000..4ab18a8
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/.transforms/5a2a29f6539bf7196604b833e371853c/transformed/classes/classes_dex/classes.dex differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/generated/source/buildConfig/debug/io/invertase/firebase/storage/BuildConfig.java b/node_modules/@react-native-firebase/storage/android/build/generated/source/buildConfig/debug/io/invertase/firebase/storage/BuildConfig.java
+new file mode 100644
+index 0000000..373cba6
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/generated/source/buildConfig/debug/io/invertase/firebase/storage/BuildConfig.java
+@@ -0,0 +1,10 @@
++/**
++ * Automatically generated file. DO NOT MODIFY
++ */
++package io.invertase.firebase.storage;
++
++public final class BuildConfig {
++  public static final boolean DEBUG = Boolean.parseBoolean("true");
++  public static final String LIBRARY_PACKAGE_NAME = "io.invertase.firebase.storage";
++  public static final String BUILD_TYPE = "debug";
++}
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml b/node_modules/@react-native-firebase/storage/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml
+new file mode 100644
+index 0000000..e6f63fe
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/AndroidManifest.xml
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++    package="io.invertase.firebase.storage" >
++
++    <uses-sdk android:minSdkVersion="24" />
++
++    <uses-permission android:name="android.permission.INTERNET" />
++    <uses-permission android:name="android.permission.WAKE_LOCK" />
++    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
++
++</manifest>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/output-metadata.json b/node_modules/@react-native-firebase/storage/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/output-metadata.json
+new file mode 100644
+index 0000000..719ab53
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/aapt_friendly_merged_manifests/debug/processDebugManifest/aapt/output-metadata.json
+@@ -0,0 +1,18 @@
++{
++  "version": 3,
++  "artifactType": {
++    "type": "AAPT_FRIENDLY_MERGED_MANIFESTS",
++    "kind": "Directory"
++  },
++  "applicationId": "io.invertase.firebase.storage",
++  "variantName": "debug",
++  "elements": [
++    {
++      "type": "SINGLE",
++      "filters": [],
++      "attributes": [],
++      "outputFile": "AndroidManifest.xml"
++    }
++  ],
++  "elementType": "File"
++}
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/aar_metadata/debug/writeDebugAarMetadata/aar-metadata.properties b/node_modules/@react-native-firebase/storage/android/build/intermediates/aar_metadata/debug/writeDebugAarMetadata/aar-metadata.properties
+new file mode 100644
+index 0000000..1211b1e
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/aar_metadata/debug/writeDebugAarMetadata/aar-metadata.properties
+@@ -0,0 +1,6 @@
++aarFormatVersion=1.0
++aarMetadataVersion=1.0
++minCompileSdk=1
++minCompileSdkExtension=0
++minAndroidGradlePluginVersion=1.0.0
++coreLibraryDesugaringEnabled=false
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/annotation_processor_list/debug/javaPreCompileDebug/annotationProcessors.json b/node_modules/@react-native-firebase/storage/android/build/intermediates/annotation_processor_list/debug/javaPreCompileDebug/annotationProcessors.json
+new file mode 100644
+index 0000000..9e26dfe
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/annotation_processor_list/debug/javaPreCompileDebug/annotationProcessors.json
+@@ -0,0 +1 @@
++{}
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar b/node_modules/@react-native-firebase/storage/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar
+new file mode 100644
+index 0000000..056b66f
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar b/node_modules/@react-native-firebase/storage/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar
+new file mode 100644
+index 0000000..3ccc3fd
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/compile_symbol_list/debug/generateDebugRFile/R.txt b/node_modules/@react-native-firebase/storage/android/build/intermediates/compile_symbol_list/debug/generateDebugRFile/R.txt
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+new file mode 100644
+index 0000000..7fe2a76
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+@@ -0,0 +1 @@
++#Mon Jun 08 14:24:42 EDT 2026
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+new file mode 100644
+index 0000000..da4936a
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/build/generated/res/resValues/debug"/></dataSet><mergedItems/></merger>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/mergeDebugAssets/merger.xml b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/mergeDebugAssets/merger.xml
+new file mode 100644
+index 0000000..664b866
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/mergeDebugAssets/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/assets"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/debug/assets"/></dataSet><dataSet config="generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/build/intermediates/shader_assets/debug/compileDebugShaders/out"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
+new file mode 100644
+index 0000000..5b4366c
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/debug/jniLibs"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
+new file mode 100644
+index 0000000..6302e74
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/debug/shaders"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/BuildConfig.class b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/BuildConfig.class
+new file mode 100644
+index 0000000..7ee3c5a
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/BuildConfig.class differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageCommon.class b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageCommon.class
+new file mode 100644
+index 0000000..d25ec40
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageCommon.class differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageDownloadTask.class b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageDownloadTask.class
+new file mode 100644
+index 0000000..4fa4201
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageDownloadTask.class differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageEvent.class b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageEvent.class
+new file mode 100644
+index 0000000..f72da21
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageEvent.class differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageModule.class b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageModule.class
+new file mode 100644
+index 0000000..73d902d
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageModule.class differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStoragePackage.class b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStoragePackage.class
+new file mode 100644
+index 0000000..3b15706
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStoragePackage.class differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageTask.class b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageTask.class
+new file mode 100644
+index 0000000..775b1c1
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageTask.class differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageUploadTask.class b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageUploadTask.class
+new file mode 100644
+index 0000000..97edeb0
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/io/invertase/firebase/storage/ReactNativeFirebaseStorageUploadTask.class differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/local_only_symbol_list/debug/parseDebugLocalResources/R-def.txt b/node_modules/@react-native-firebase/storage/android/build/intermediates/local_only_symbol_list/debug/parseDebugLocalResources/R-def.txt
+new file mode 100644
+index 0000000..78ac5b8
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/local_only_symbol_list/debug/parseDebugLocalResources/R-def.txt
+@@ -0,0 +1,2 @@
++R_DEF: Internal format may change without notice
++local
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/manifest_merge_blame_file/debug/processDebugManifest/manifest-merger-blame-debug-report.txt b/node_modules/@react-native-firebase/storage/android/build/intermediates/manifest_merge_blame_file/debug/processDebugManifest/manifest-merger-blame-debug-report.txt
+new file mode 100644
+index 0000000..60312a2
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/manifest_merge_blame_file/debug/processDebugManifest/manifest-merger-blame-debug-report.txt
+@@ -0,0 +1,17 @@
++1<?xml version="1.0" encoding="utf-8"?>
++2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++3    package="io.invertase.firebase.storage" >
++4
++5    <uses-sdk android:minSdkVersion="24" />
++6
++7    <uses-permission android:name="android.permission.INTERNET" />
++7-->/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:4:5-67
++7-->/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:4:22-64
++8    <uses-permission android:name="android.permission.WAKE_LOCK" />
++8-->/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:5:5-68
++8-->/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:5:22-65
++9    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
++9-->/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:6:5-79
++9-->/Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:6:22-76
++10
++11</manifest>
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml b/node_modules/@react-native-firebase/storage/android/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml
+new file mode 100644
+index 0000000..e6f63fe
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml
+@@ -0,0 +1,11 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++    package="io.invertase.firebase.storage" >
++
++    <uses-sdk android:minSdkVersion="24" />
++
++    <uses-permission android:name="android.permission.INTERNET" />
++    <uses-permission android:name="android.permission.WAKE_LOCK" />
++    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
++
++</manifest>
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/navigation_json/debug/extractDeepLinksDebug/navigation.json b/node_modules/@react-native-firebase/storage/android/build/intermediates/navigation_json/debug/extractDeepLinksDebug/navigation.json
+new file mode 100644
+index 0000000..0637a08
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/navigation_json/debug/extractDeepLinksDebug/navigation.json
+@@ -0,0 +1 @@
++[]
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/nested_resources_validation_report/debug/generateDebugResources/nestedResourcesValidationReport.txt b/node_modules/@react-native-firebase/storage/android/build/intermediates/nested_resources_validation_report/debug/generateDebugResources/nestedResourcesValidationReport.txt
+new file mode 100644
+index 0000000..08f4ebe
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/nested_resources_validation_report/debug/generateDebugResources/nestedResourcesValidationReport.txt
+@@ -0,0 +1 @@
++0 Warning/Error
+\ No newline at end of file
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar b/node_modules/@react-native-firebase/storage/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar
+new file mode 100644
+index 0000000..eb52080
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar differ
+diff --git a/node_modules/@react-native-firebase/storage/android/build/intermediates/symbol_list_with_package_name/debug/generateDebugRFile/package-aware-r.txt b/node_modules/@react-native-firebase/storage/android/build/intermediates/symbol_list_with_package_name/debug/generateDebugRFile/package-aware-r.txt
+new file mode 100644
+index 0000000..415a2a4
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/intermediates/symbol_list_with_package_name/debug/generateDebugRFile/package-aware-r.txt
+@@ -0,0 +1 @@
++io.invertase.firebase.storage
+diff --git a/node_modules/@react-native-firebase/storage/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/@react-native-firebase/storage/android/build/outputs/logs/manifest-merger-debug-report.txt
+new file mode 100644
+index 0000000..b87ce08
+--- /dev/null
++++ b/node_modules/@react-native-firebase/storage/android/build/outputs/logs/manifest-merger-debug-report.txt
+@@ -0,0 +1,29 @@
++-- Merging decision tree log ---
++manifest
++ADDED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:2:1-7:12
++INJECTED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:2:1-7:12
++	package
++		ADDED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:3:5-44
++		INJECTED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml
++	xmlns:android
++		ADDED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:2:11-69
++uses-permission#android.permission.INTERNET
++ADDED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:4:5-67
++	android:name
++		ADDED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:4:22-64
++uses-permission#android.permission.WAKE_LOCK
++ADDED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:5:5-68
++	android:name
++		ADDED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:5:22-65
++uses-permission#android.permission.ACCESS_NETWORK_STATE
++ADDED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:6:5-79
++	android:name
++		ADDED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml:6:22-76
++uses-sdk
++INJECTED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
++INJECTED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml
++INJECTED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml
++	android:targetSdkVersion
++		INJECTED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml
++	android:minSdkVersion
++		INJECTED from /Users/bara080/bara/passtime/Frontend/node_modules/@react-native-firebase/storage/android/src/main/AndroidManifest.xml
+diff --git a/node_modules/@react-native-firebase/storage/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/@react-native-firebase/storage/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
+new file mode 100644
+index 0000000..316d104
+Binary files /dev/null and b/node_modules/@react-native-firebase/storage/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
+diff --git a/node_modules/@react-native-firebase/storage/ios/RNFBStorage/RNFBStorageModule.m b/node_modules/@react-native-firebase/storage/ios/RNFBStorage/RNFBStorageModule.m
+index a3695b6..aefc3b8 100644
+--- a/node_modules/@react-native-firebase/storage/ios/RNFBStorage/RNFBStorageModule.m
++++ b/node_modules/@react-native-firebase/storage/ios/RNFBStorage/RNFBStorageModule.m
+@@ -80,11 +80,11 @@ RCT_EXPORT_MODULE();
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Reference#delete
+  */
+-RCT_EXPORT_METHOD(delete
+-                  : (FIRApp *)firebaseApp
+-                  : (NSString *)url
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_REMAP_METHOD(delete,
++                 storageDelete:(FIRApp *)firebaseApp
++                 url:(NSString *)url
++                 resolve:(RCTPromiseResolveBlock)resolve
++                 reject:(RCTPromiseRejectBlock)reject) {
+   FIRStorageReference *storageReference = [self getReferenceFromUrl:url app:firebaseApp];
+ 
+   [storageReference deleteWithCompletion:^(NSError *_Nullable error) {
+@@ -99,11 +99,10 @@ RCT_EXPORT_METHOD(delete
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Reference#getDownloadURL
+  */
+-RCT_EXPORT_METHOD(getDownloadURL
+-                  : (FIRApp *)firebaseApp
+-                  : (NSString *)url
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(getDownloadURL:(FIRApp *)firebaseApp
++                  url:(NSString *)url
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   FIRStorageReference *storageReference = [self getReferenceFromUrl:url app:firebaseApp];
+ 
+   [storageReference downloadURLWithCompletion:^(NSURL *_Nullable URL, NSError *_Nullable error) {
+@@ -125,11 +124,10 @@ RCT_EXPORT_METHOD(getDownloadURL
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Reference#getMetadata
+  */
+-RCT_EXPORT_METHOD(getMetadata
+-                  : (FIRApp *)firebaseApp
+-                  : (NSString *)url
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(getMetadata:(FIRApp *)firebaseApp
++                  url:(NSString *)url
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   FIRStorageReference *storageReference = [self getReferenceFromUrl:url app:firebaseApp];
+ 
+   [storageReference
+@@ -145,12 +143,11 @@ RCT_EXPORT_METHOD(getMetadata
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Reference#updateMetadata
+  */
+-RCT_EXPORT_METHOD(updateMetadata
+-                  : (FIRApp *)firebaseApp
+-                  : (NSString *)url
+-                  : (NSDictionary *)metadata
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(updateMetadata:(FIRApp *)firebaseApp
++                  url:(NSString *)url
++                  metadata:(NSDictionary *)metadata
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   FIRStorageReference *storageReference = [self getReferenceFromUrl:url app:firebaseApp];
+ 
+   [storageReference metadataWithCompletion:^(FIRStorageMetadata *_Nullable fetchedMetadata,
+@@ -179,12 +176,11 @@ RCT_EXPORT_METHOD(updateMetadata
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Reference#list
+  */
+-RCT_EXPORT_METHOD(list
+-                  : (FIRApp *)firebaseApp
+-                  : (NSString *)url
+-                  : (NSDictionary *)listOptions
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(list:(FIRApp *)firebaseApp
++                  url:(NSString *)url
++                  listOptions:(NSDictionary *)listOptions
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   FIRStorageReference *storageReference = [self getReferenceFromUrl:url app:firebaseApp];
+   long maxResults = [listOptions[@"maxResults"] longValue];
+ 
+@@ -210,11 +206,10 @@ RCT_EXPORT_METHOD(list
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Reference#listAll
+  */
+-RCT_EXPORT_METHOD(listAll
+-                  : (FIRApp *)firebaseApp
+-                  : (NSString *)url
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(listAll:(FIRApp *)firebaseApp
++                  url:(NSString *)url
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   FIRStorageReference *storageReference = [self getReferenceFromUrl:url app:firebaseApp];
+ 
+   __block bool alreadyCompleted = false;
+@@ -241,11 +236,10 @@ RCT_EXPORT_METHOD(listAll
+  * @url
+  * https://firebase.google.com/docs/reference/js/firebase.storage.Storage#setMaxDownloadRetryTime
+  */
+-RCT_EXPORT_METHOD(setMaxDownloadRetryTime
+-                  : (FIRApp *)firebaseApp
+-                  : (nonnull NSNumber *)milliseconds
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(setMaxDownloadRetryTime:(FIRApp *)firebaseApp
++                  milliseconds:(nonnull NSNumber *)milliseconds
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   maxDownloadRetryTime = [milliseconds doubleValue] / 1000;
+   [[FIRStorage storageForApp:firebaseApp]
+       setMaxDownloadRetryTime:[milliseconds doubleValue] / 1000];
+@@ -256,11 +250,10 @@ RCT_EXPORT_METHOD(setMaxDownloadRetryTime
+  * @url
+  * https://firebase.google.com/docs/reference/js/firebase.storage.Storage#setMaxOperationRetryTime
+  */
+-RCT_EXPORT_METHOD(setMaxOperationRetryTime
+-                  : (FIRApp *)firebaseApp
+-                  : (nonnull NSNumber *)milliseconds
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(setMaxOperationRetryTime:(FIRApp *)firebaseApp
++                  milliseconds:(nonnull NSNumber *)milliseconds
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   maxOperationRetryTime = [milliseconds doubleValue] / 1000;
+   [[FIRStorage storageForApp:firebaseApp]
+       setMaxOperationRetryTime:[milliseconds doubleValue] / 1000];
+@@ -270,11 +263,10 @@ RCT_EXPORT_METHOD(setMaxOperationRetryTime
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Storage#setMaxUploadRetryTime
+  */
+-RCT_EXPORT_METHOD(setMaxUploadRetryTime
+-                  : (FIRApp *)firebaseApp
+-                  : (nonnull NSNumber *)milliseconds
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(setMaxUploadRetryTime:(FIRApp *)firebaseApp
++                  milliseconds:(nonnull NSNumber *)milliseconds
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   maxUploadRetryTime = [milliseconds doubleValue] / 1000;
+   [[FIRStorage storageForApp:firebaseApp] setMaxUploadRetryTime:[milliseconds doubleValue] / 1000];
+   resolve([NSNull null]);
+@@ -283,13 +275,12 @@ RCT_EXPORT_METHOD(setMaxUploadRetryTime
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Reference#downloadFile
+  */
+-RCT_EXPORT_METHOD(writeToFile
+-                  : (FIRApp *)firebaseApp
+-                  : (NSString *)url
+-                  : (NSString *)localFilePath
+-                  : (nonnull NSNumber *)taskId
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(writeToFile:(FIRApp *)firebaseApp
++                  url:(NSString *)url
++                  localFilePath:(NSString *)localFilePath
++                  taskId:(nonnull NSNumber *)taskId
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   FIRStorageReference *storageReference = [self getReferenceFromUrl:url app:firebaseApp];
+   NSURL *localFile = [NSURL fileURLWithPath:localFilePath];
+ 
+@@ -403,14 +394,13 @@ RCT_EXPORT_METHOD(writeToFile
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Reference#putFile
+  */
+-RCT_EXPORT_METHOD(putFile
+-                  : (FIRApp *)firebaseApp
+-                  : (NSString *)url
+-                  : (NSString *)localFilePath
+-                  : (NSDictionary *)metadata
+-                  : (nonnull NSNumber *)taskId
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(putFile:(FIRApp *)firebaseApp
++                  url:(NSString *)url
++                  localFilePath:(NSString *)localFilePath
++                  metadata:(NSDictionary *)metadata
++                  taskId:(nonnull NSNumber *)taskId
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   FIRStorageReference *storageReference = [self getReferenceFromUrl:url app:firebaseApp];
+   FIRStorageMetadata *storageMetadata =
+       [RNFBStorageCommon buildMetadataFromMap:metadata
+@@ -476,15 +466,14 @@ RCT_EXPORT_METHOD(putFile
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Reference#putFile
+  */
+-RCT_EXPORT_METHOD(putString
+-                  : (FIRApp *)firebaseApp
+-                  : (NSString *)url
+-                  : (NSString *)string
+-                  : (NSString *)format
+-                  : (NSDictionary *)metadata
+-                  : (nonnull NSNumber *)taskId
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(putString:(FIRApp *)firebaseApp
++                  url:(NSString *)url
++                  string:(NSString *)string
++                  format:(NSString *)format
++                  metadata:(NSDictionary *)metadata
++                  taskId:(nonnull NSNumber *)taskId
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   FIRStorageReference *storageReference = [self getReferenceFromUrl:url app:firebaseApp];
+   FIRStorageMetadata *storageMetadata =
+       [RNFBStorageCommon buildMetadataFromMap:metadata
+@@ -508,11 +497,10 @@ RCT_EXPORT_METHOD(putString
+ /**
+  * @url https://firebase.google.com/docs/reference/js/firebase.storage.Storage#useEmulator
+  */
+-RCT_EXPORT_METHOD(useEmulator
+-                  : (FIRApp *)firebaseApp
+-                  : (nonnull NSString *)host
+-                  : (NSInteger)port
+-                  : (NSString *)bucketUrl) {
++RCT_EXPORT_METHOD(useEmulator:(FIRApp *)firebaseApp
++                  host:(nonnull NSString *)host
++                  port:(NSInteger)port
++                  bucketUrl:(NSString *)bucketUrl) {
+   emulatorHost = host;
+   emulatorPort = port;
+   NSString *key = [self createEmulatorKey:bucketUrl appName:firebaseApp.name];
+@@ -526,12 +514,11 @@ RCT_EXPORT_METHOD(useEmulator
+ /**
+  * @url N/A - RNFB Specific
+  */
+-RCT_EXPORT_METHOD(setTaskStatus
+-                  : (FIRApp *)firebaseApp
+-                  : (nonnull NSNumber *)taskId
+-                  : (nonnull NSNumber *)status
+-                  : (RCTPromiseResolveBlock)resolve
+-                  : (RCTPromiseRejectBlock)reject) {
++RCT_EXPORT_METHOD(setTaskStatus:(FIRApp *)firebaseApp
++                  taskId:(nonnull NSNumber *)taskId
++                  status:(nonnull NSNumber *)status
++                  resolve:(RCTPromiseResolveBlock)resolve
++                  reject:(RCTPromiseRejectBlock)reject) {
+   id task = PENDING_TASKS[taskId];
+   if (task == nil) {
+     resolve(@(NO));

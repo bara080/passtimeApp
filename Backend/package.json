@@ -1,0 +1,40 @@
+{
+  "name": "passtime-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "cross-env NODE_ENV=production node index.js",
+    "dev": "cross-env NODE_ENV=development nodemon index.js",
+    "local": "cross-env NODE_ENV=local nodemon index.js",
+    "build": "echo 'No build step needed'"
+  },
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.5",
+    "@sentry/node": "^10.32.1",
+    "@sentry/profiling-node": "^10.32.1",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.5.2",
+    "firebase-admin": "^13.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^7.2.0",
+    "mongoose": "^8.8.4",
+    "rate-limit-redis": "^5.0.0",
+    "redis": "^5.10.0",
+    "resend": "^6.12.2",
+    "stripe": "^17.7.0",
+    "telnyx": "^6.65.0",
+    "uuid": "^11.1.0",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "nodemon": "^3.1.7"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
