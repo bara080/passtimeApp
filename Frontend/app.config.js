@@ -7,7 +7,8 @@ module.exports = {
     icon: "./assets/PasstimeIconMixed.jpg",
     scheme: "passtime",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
+    // TODO: re-enable once react-native-svg fully supports New Architecture on Android (topSvgLayout error)
+    newArchEnabled: false,
 
     splash: {
       image: "./assets/splash-icon.png",
