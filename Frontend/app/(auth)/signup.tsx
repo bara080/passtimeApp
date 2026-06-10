@@ -50,21 +50,19 @@ export default function SignupScreen() {
               style={{
                 borderWidth: 1,
                 borderColor: "#d1d5dc",
-                borderRadius: 12,
-                padding: 20,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 16,
+                borderRadius: 16,
+                overflow: "hidden",
+                backgroundColor: "#fafafa",
               }}
             >
               <Image
                 source={image}
-                style={{ width: 56, height: 56, borderRadius: 28 }}
+                style={{ width: "100%", height: 160 }}
                 resizeMode="cover"
               />
-              <View style={{ flex: 1 }}>
+              <View style={{ padding: 16 }}>
                 <Text style={{ fontSize: 18, fontWeight: "600", color: "#1a1a1a" }}>{title}</Text>
-                <Text style={{ fontSize: 14, color: "#666", marginTop: 2 }}>{subtitle}</Text>
+                <Text style={{ fontSize: 14, color: "#666", marginTop: 4 }}>{subtitle}</Text>
               </View>
             </Pressable>
           ))}

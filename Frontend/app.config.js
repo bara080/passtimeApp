@@ -4,7 +4,7 @@ module.exports = {
     slug: "passtime-app",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/PasstimeIconMixed.jpg",
+    icon: "./assets/app-icon.png",
     scheme: "passtime",
     userInterfaceStyle: "automatic",
     // TODO: re-enable once react-native-svg fully supports New Architecture on Android (topSvgLayout error)
@@ -26,7 +26,7 @@ module.exports = {
       package: "com.passtime.app",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/adaptive-icon-foreground.png",
         backgroundColor: "#ffffff",
       },
     },
