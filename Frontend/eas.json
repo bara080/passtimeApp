@@ -13,6 +13,7 @@
       "android": {
         "buildType": "apk"
       },
+      "environment": "development",
       "env": {
         "EXPO_PUBLIC_APP_BASE_URL": "https://api.passtime.app"
       }
@@ -22,6 +23,7 @@
       "android": {
         "buildType": "apk"
       },
+      "environment": "development",
       "env": {
         "EXPO_PUBLIC_APP_BASE_URL": "https://api.passtime.app"
       }

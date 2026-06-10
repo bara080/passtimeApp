@@ -51,3 +51,9 @@ AGENTS.md
 
 # Empty nested repo
 passtimeApp/
+
+# Firebase credentials — served from EAS secrets at build time
+Frontend/google-services.json
+Frontend/GoogleService-Info.plist
+Frontend/android/app/google-services.json
+Frontend/ios/Passtime/GoogleService-Info.plist
