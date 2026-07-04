@@ -15,10 +15,13 @@ import { useVerifyOtpMutation } from "@/hooks/useSendOtp";
 import { useSendOtpMutation } from "@/hooks/useSendOtp";
 import { useOtpTimer } from "@/hooks/useOtpTimer";
 import { PHONE_OTP_LENGTH } from "@/constants/phoneOtpLength";
+import { useAuth } from "@/context/AuthProvider";
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
-  const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
+  const { phoneNumber, flow } = useLocalSearchParams<{ phoneNumber: string; flow?: string }>();
+  const isSignupFlow = flow === "signup";
+  const { updateUser } = useAuth();
   const [code, setCode] = useState("");
   const inputRef = useRef<TextInput>(null);
 
@@ -37,7 +40,12 @@ export default function VerifyOtpScreen() {
     if (digits.length === PHONE_OTP_LENGTH) {
       try {
         await verifyOtp.mutateAsync({ phoneNumber: phoneNumber ?? "", code: digits });
-        router.back();
+        await updateUser({ phoneVerified: true, phoneNumber: phoneNumber ?? undefined });
+        if (isSignupFlow) {
+          router.replace("/(app)");
+        } else {
+          router.back();
+        }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Invalid code.";
         Alert.alert("Verification failed", message);

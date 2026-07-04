@@ -8,7 +8,11 @@ import {
   type PropsWithChildren,
 } from "react";
 import { router, useSegments } from "expo-router";
+import { isRunningInExpoGo } from "expo";
 import * as Device from "expo-device";
+import * as Sentry from "@sentry/react-native";
+import LogRocket from "@logrocket/react-native";
+import { identifyDevice } from "vexo-analytics";
 import {
   saveToSecureStore,
   getFromSecureStore,
@@ -27,6 +31,7 @@ type AuthContextType = {
   register: (payload: RegisterPayload) => Promise<boolean>;
   signOut: () => Promise<void>;
   setUser: (user: AuthUser | null) => void;
+  updateUser: (patch: Partial<AuthUser>) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -37,12 +42,20 @@ const AuthContext = createContext<AuthContextType>({
   register: async () => false,
   signOut: async () => {},
   setUser: () => {},
+  updateUser: async () => {},
 });
+
+// Signup verification screens an authenticated user is allowed to stay on
+const VERIFICATION_SCREENS = new Set(["verify-email", "verify-phone", "verify-otp"]);
 
 export function SessionProvider({ children }: PropsWithChildren) {
   const [initializing, setInitializing] = useState(true);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
+  // True between register() succeeding and the signup verification chain
+  // finishing — keeps the route guard from yanking the user out of (auth)
+  // while they're still on the register screen waiting to navigate.
+  const [pendingVerification, setPendingVerification] = useState(false);
   const segments = useSegments();
 
   // Restore session from secure store on mount
@@ -73,18 +86,28 @@ export function SessionProvider({ children }: PropsWithChildren) {
     if (!session && !inAuthGroup) {
       console.log("[AuthProvider] no session → redirecting to /(auth)");
       router.replace("/(auth)");
+    } else if (session && inAuthGroup && (pendingVerification || VERIFICATION_SCREENS.has(segments[1] ?? ""))) {
+      console.log("[AuthProvider] mid-verification — staying on", segments[1]);
     } else if (session && !inAppGroup) {
       console.log("[AuthProvider] session found → redirecting to /(app)");
       router.replace("/(app)");
     } else {
+      if (inAppGroup && pendingVerification) setPendingVerification(false);
       console.log("[AuthProvider] no redirect needed, staying on segment:", segments[0]);
     }
-  }, [session, segments, initializing]);
+  }, [session, segments, initializing, pendingVerification]);
 
   const persistSession = useCallback(async (s: AuthSession) => {
     setSession(s);
     setUser(s.user);
     updateSession(s);
+    Sentry.setUser({ id: s.uid, email: s.user.email });
+    if (process.env.EXPO_PUBLIC_LOGROCKET_APP_ID && !isRunningInExpoGo()) {
+      LogRocket.identify(s.uid, { email: s.user.email, role: s.role });
+    }
+    if (process.env.EXPO_PUBLIC_VEXO_API_KEY && !isRunningInExpoGo()) {
+      identifyDevice(s.uid).catch(() => {});
+    }
     await saveToSecureStore(SECURE_STORE_KEYS.SESSION, JSON.stringify(s));
     await saveToSecureStore(SECURE_STORE_KEYS.ACCESS_TOKEN, s.accessToken);
     await saveToSecureStore(SECURE_STORE_KEYS.REFRESH_TOKEN, s.refreshToken);
@@ -112,6 +135,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
     try {
       const deviceInfo = Device.modelName ?? "Unknown device";
       const res = await authApi.register({ ...payload, deviceInfo });
+      setPendingVerification(true);
       await persistSession({
         uid: res.user.uid,
         role: res.user.role,
@@ -126,6 +150,11 @@ export function SessionProvider({ children }: PropsWithChildren) {
     }
   }, [persistSession]);
 
+  const updateUser = useCallback(async (patch: Partial<AuthUser>) => {
+    if (!session) return;
+    await persistSession({ ...session, user: { ...session.user, ...patch } });
+  }, [session, persistSession]);
+
   const signOut = useCallback(async () => {
     try {
       await authApi.logout();
@@ -133,13 +162,18 @@ export function SessionProvider({ children }: PropsWithChildren) {
     await clearSecureStore(Object.values(SECURE_STORE_KEYS));
     setSession(null);
     setUser(null);
+    setPendingVerification(false);
+    Sentry.setUser(null);
+    if (process.env.EXPO_PUBLIC_VEXO_API_KEY && !isRunningInExpoGo()) {
+      identifyDevice(null).catch(() => {});
+    }
     updateSession(null);
     router.replace("/(auth)/login");
   }, []);
 
   const value = useMemo(
-    () => ({ initializing, session, user, login, register, signOut, setUser }),
-    [initializing, session, user, login, register, signOut]
+    () => ({ initializing, session, user, login, register, signOut, setUser, updateUser }),
+    [initializing, session, user, login, register, signOut, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

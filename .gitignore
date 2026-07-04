@@ -52,8 +52,14 @@ AGENTS.md
 # Empty nested repo
 passtimeApp/
 
+# Internal/local docs — never commit (also covered by *.md above; this is defense-in-depth)
+passtimeLocalDocs/
+
 # Firebase credentials — served from EAS secrets at build time
 Frontend/google-services.json
 Frontend/GoogleService-Info.plist
 Frontend/android/app/google-services.json
 Frontend/ios/Passtime/GoogleService-Info.plist
+
+# API collection — local only (contains test tokens/URLs)
+passtime-api.postman_collection.json

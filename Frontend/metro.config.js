@@ -1,8 +1,10 @@
-const { getDefaultConfig } = require("expo/metro-config");
+const { getSentryExpoConfig } = require("@sentry/react-native/metro");
 const { withNativeWind } = require("nativewind/metro");
 
 /** @type {import('expo/metro-config').MetroConfig} */
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname, {
+  autoWrapExpoRouterErrorBoundary: true,
+});
 
 // @tanstack/query-core v5 exports only its "modern" build which uses private
 // class fields (#field syntax). The Hermes engine in the dev client doesn't

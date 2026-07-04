@@ -9,7 +9,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import PhoneInput from "@/components/form/PhoneInput";
 import { useSendOtpMutation } from "@/hooks/useSendOtp";
@@ -17,6 +17,8 @@ import { isValidPhoneNumber, toE164FromCallingCodeAndNational, type CountryCode 
 
 export default function VerifyPhoneScreen() {
   const router = useRouter();
+  const { flow } = useLocalSearchParams<{ flow?: string }>();
+  const isSignupFlow = flow === "signup";
   const [callingCode, setCallingCode] = useState("1");
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>("US");
   const [nationalNumber, setNationalNumber] = useState("");
@@ -40,7 +42,10 @@ export default function VerifyPhoneScreen() {
 
     try {
       await sendOtp.mutateAsync({ phoneNumber: e164 });
-      router.push({ pathname: "/(auth)/verify-otp", params: { phoneNumber: e164 } });
+      router.push({
+        pathname: "/(auth)/verify-otp",
+        params: { phoneNumber: e164, ...(isSignupFlow ? { flow: "signup" } : {}) },
+      });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to send OTP.";
       Alert.alert("Error", message);
@@ -53,9 +58,11 @@ export default function VerifyPhoneScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#1a1a1a" />
-        </TouchableOpacity>
+        {!isSignupFlow && (
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ArrowLeft size={24} color="#1a1a1a" />
+          </TouchableOpacity>
+        )}
 
         <Text style={styles.heading}>Verify your phone</Text>
         <Text style={styles.subheading}>

@@ -23,7 +23,7 @@ module.exports = {
     },
 
     android: {
-      package: "com.passtime.app",
+      package: "tech.clickbuild.passtime",
       googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon-foreground.png",
@@ -40,6 +40,15 @@ module.exports = {
     plugins: [
       "expo-router",
       "expo-secure-store",
+      [
+        "@sentry/react-native/expo",
+        {
+          url: "https://sentry.io/",
+          organization: "clickbuild-tech",
+          project: "passtime-mobile",
+        },
+      ],
+      "@logrocket/react-native",
       ["@react-native-firebase/app", {}],
       [
         "expo-build-properties",

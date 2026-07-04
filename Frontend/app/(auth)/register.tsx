@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft } from "lucide-react-native";
 import { useAuth } from "@/context/AuthProvider";
+import { otpApi } from "@/services/otp";
 import type { UserRole } from "@/services/auth/types";
 
 export default function RegisterScreen() {
@@ -29,17 +30,29 @@ export default function RegisterScreen() {
       return;
     }
     setLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
     const ok = await register({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       password,
       role: validRole,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
     });
-    setLoading(false);
     if (!ok) {
+      setLoading(false);
       Alert.alert("Registration Failed", "Could not create your account. Please try again.");
+      return;
     }
+    try {
+      await otpApi.sendVerifyEmail({ email: normalizedEmail, displayName: firstName.trim() });
+    } catch {
+      // Verify screen offers resend — don't block signup on a failed first send
+    }
+    setLoading(false);
+    router.replace({
+      pathname: "/(auth)/verify-email",
+      params: { email: normalizedEmail, displayName: firstName.trim(), flow: "signup" },
+    });
   };
 
   return (

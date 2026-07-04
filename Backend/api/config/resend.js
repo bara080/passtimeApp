@@ -1,6 +1,16 @@
 const { Resend } = require("resend");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy init — a missing key must fail the email feature, not crash the whole API at boot
+let resendClient = null;
+function getResend() {
+  if (!resendClient) {
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error("RESEND_API_KEY is not set — email sending is unavailable");
+    }
+    resendClient = new Resend(process.env.RESEND_API_KEY);
+  }
+  return resendClient;
+}
 
 function getFrom() {
   const email = process.env.EMAIL_FROM;
@@ -36,7 +46,7 @@ exports.sendEmail = async ({ to, subject, html, text, idempotencyKey }) => {
     ...(text ? { text } : {}),
     ...(idempotencyKey ? { idempotencyKey } : {}),
   };
-  const { data, error } = await resend.emails.send(payload);
+  const { data, error } = await getResend().emails.send(payload);
   if (error) {
     const err = new Error(error.message || "Resend send failed");
     err.name = error.name || "ResendError";
@@ -54,7 +64,7 @@ exports.sendTemplate = async ({ to, subject, templateId, variables, idempotencyK
     template: { id: templateId, variables: normalizeVars(variables) || {} },
     ...(idempotencyKey ? { idempotencyKey } : {}),
   };
-  const { data, error } = await resend.emails.send(payload);
+  const { data, error } = await getResend().emails.send(payload);
   if (error) {
     const err = new Error(error.message || "Resend template send failed");
     err.name = error.name || "ResendError";

@@ -14,7 +14,8 @@ const { createSession, deleteSession, deleteAllUserSessions } = require("../util
 const { getRedis } = require("../config/redis");
 const { success, created, error } = require("../utils/responseFormatter");
 const AppError = require("../utils/AppError");
-const { sendEmail } = require("../config/resend");
+const { sendEmail, sendTemplate } = require("../config/resend");
+const { renderTemplate } = require("../emails");
 
 const RESET_OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_TOKEN_TTL_SECONDS = 15 * 60;     // 15 minutes
@@ -253,19 +254,20 @@ exports.forgotPassword = async (req, res, next) => {
       console.log(`[forgotPassword] DEV — reset code for ${normalized}: ${code}`);
     } else {
       try {
-        await sendEmail({
-          to: normalized,
-          subject: "Reset your Passtime password",
-          html: `
-            <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-              <p>Hi ${foundUser.firstName || "there"},</p>
-              <p>Your password reset code is:</p>
-              <p style="font-size: 36px; font-weight: 700; letter-spacing: 6px; color: #ff6633;">${code}</p>
-              <p>This code expires in 10 minutes. If you did not request a reset, ignore this email.</p>
-            </div>
-          `,
-          idempotencyKey: `reset/${foundUser.uid}/${expiresAt.toISOString()}`,
-        });
+        const templateId = process.env.RESEND_PASSWORD_RESET_TEMPLATE_ID;
+        const subject = "Reset your Passtime password";
+        const variables = { name: foundUser.firstName || "there", code };
+        const idempotencyKey = `reset/${foundUser.uid}/${expiresAt.toISOString()}`;
+        if (templateId) {
+          await sendTemplate({ to: normalized, subject, templateId, variables, idempotencyKey });
+        } else {
+          await sendEmail({
+            to: normalized,
+            subject,
+            html: renderTemplate("password-reset", variables),
+            idempotencyKey,
+          });
+        }
       } catch (emailErr) {
         console.error("[forgotPassword] Email send failed:", emailErr.message);
         // Don't surface email errors to the client — fall through

@@ -17,10 +17,17 @@ import {
 } from "@/hooks/useSendVerifyEmail";
 import { useOtpTimer } from "@/hooks/useOtpTimer";
 import { EMAIL_OTP_LENGTH } from "@/constants/phoneOtpLength";
+import { useAuth } from "@/context/AuthProvider";
 
 export default function VerifyEmailScreen() {
   const router = useRouter();
-  const { email, displayName } = useLocalSearchParams<{ email: string; displayName?: string }>();
+  const { email, displayName, flow } = useLocalSearchParams<{
+    email: string;
+    displayName?: string;
+    flow?: string;
+  }>();
+  const isSignupFlow = flow === "signup";
+  const { updateUser } = useAuth();
   const [code, setCode] = useState("");
   const inputRef = useRef<TextInput>(null);
 
@@ -35,7 +42,12 @@ export default function VerifyEmailScreen() {
     if (digits.length === EMAIL_OTP_LENGTH) {
       try {
         await verifyEmailCode.mutateAsync({ email: email ?? "", code: digits });
-        router.back();
+        await updateUser({ emailVerified: true });
+        if (isSignupFlow) {
+          router.replace({ pathname: "/(auth)/verify-phone", params: { flow: "signup" } });
+        } else {
+          router.back();
+        }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Invalid code.";
         Alert.alert("Verification failed", message);
@@ -67,9 +79,11 @@ export default function VerifyEmailScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#1a1a1a" />
-        </TouchableOpacity>
+        {!isSignupFlow && (
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ArrowLeft size={24} color="#1a1a1a" />
+          </TouchableOpacity>
+        )}
 
         <Text style={styles.heading}>Verify your email</Text>
         <Text style={styles.subheading}>

@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const { success, error } = require("../utils/responseFormatter");
 const { getUserModel, getConnection } = require("../config/db");
 const { sendEmail, sendTemplate } = require("../config/resend");
+const { renderTemplate } = require("../emails");
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 3;
@@ -47,14 +48,7 @@ async function deliverVerificationEmail({ email, displayName, role }) {
     await sendEmail({
       to: email,
       subject: "Verify your email — Passtime",
-      html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-          <p>Hi ${displayName || "there"},</p>
-          <p>Your verification code is:</p>
-          <p style="font-size: 32px; font-weight: 700; letter-spacing: 4px; color: #ff6633;">${code}</p>
-          <p>This code expires in 10 minutes.</p>
-        </div>
-      `,
+      html: renderTemplate("email-verification", { name: displayName || "there", code }),
       idempotencyKey,
     });
   }
@@ -126,12 +120,7 @@ exports.verifyEmailCode = async (req, res, next) => {
       await sendEmail({
         to: email,
         subject: `Welcome to Passtime!`,
-        html: `
-          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <p>Hi ${user.firstName || "there"},</p>
-            <p>Your email is verified — welcome to Passtime.</p>
-          </div>
-        `,
+        html: renderTemplate("welcome", { name: user.firstName || "there" }),
         idempotencyKey,
       });
     }
