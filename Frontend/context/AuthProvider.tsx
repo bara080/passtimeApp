@@ -46,7 +46,30 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 // Signup verification screens an authenticated user is allowed to stay on
-const VERIFICATION_SCREENS = new Set(["verify-email", "verify-phone", "verify-otp"]);
+const VERIFICATION_SCREENS = new Set([
+  "verify-email",
+  "verify-phone",
+  "verify-otp",
+  "success",
+  "profile-details",
+]);
+
+// First incomplete signup step for a user, or null when fully onboarded.
+// Keeps the verification chain resumable after an app kill/relaunch.
+function getIncompleteStep(user: AuthUser):
+  | { pathname: string; params?: Record<string, string> }
+  | null {
+  if (!user.emailVerified) {
+    return { pathname: "/(auth)/verify-email", params: { email: user.email, flow: "signup" } };
+  }
+  if (!user.phoneVerified) {
+    return { pathname: "/(auth)/verify-phone", params: { flow: "signup" } };
+  }
+  if (!user.firstName) {
+    return { pathname: "/(auth)/profile-details" };
+  }
+  return null;
+}
 
 export function SessionProvider({ children }: PropsWithChildren) {
   const [initializing, setInitializing] = useState(true);
@@ -68,6 +91,19 @@ export function SessionProvider({ children }: PropsWithChildren) {
           setSession(parsed);
           setUser(parsed.user);
           updateSession(parsed);
+          // Refresh verification/profile flags from the server — stored copies go stale
+          authApi
+            .getMe()
+            .then(async (fresh) => {
+              const merged = { ...parsed, user: { ...parsed.user, ...fresh } };
+              setSession(merged);
+              setUser(merged.user);
+              updateSession(merged);
+              await saveToSecureStore(SECURE_STORE_KEYS.SESSION, JSON.stringify(merged));
+            })
+            .catch(() => {
+              // offline or expired session — keep the stored copy
+            });
         }
       } catch {
         // corrupt session data — start fresh
@@ -88,11 +124,19 @@ export function SessionProvider({ children }: PropsWithChildren) {
       router.replace("/(auth)");
     } else if (session && inAuthGroup && (pendingVerification || VERIFICATION_SCREENS.has(segments[1] ?? ""))) {
       console.log("[AuthProvider] mid-verification — staying on", segments[1]);
-    } else if (session && !inAppGroup) {
-      console.log("[AuthProvider] session found → redirecting to /(app)");
-      router.replace("/(app)");
+    } else if (session) {
+      const incomplete = getIncompleteStep(session.user);
+      if (incomplete) {
+        console.log("[AuthProvider] resuming verification chain →", incomplete.pathname);
+        router.replace(incomplete as never);
+      } else if (!inAppGroup) {
+        console.log("[AuthProvider] session found → redirecting to /(app)");
+        router.replace("/(app)");
+      } else {
+        if (pendingVerification) setPendingVerification(false);
+        console.log("[AuthProvider] no redirect needed, staying on segment:", segments[0]);
+      }
     } else {
-      if (inAppGroup && pendingVerification) setPendingVerification(false);
       console.log("[AuthProvider] no redirect needed, staying on segment:", segments[0]);
     }
   }, [session, segments, initializing, pendingVerification]);

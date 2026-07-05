@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
     displayName: { type: String, trim: true },
     avatarUrl: { type: String },
     phoneNumber: { type: String },
+    dateOfBirth: { type: Date },
     emailVerified: { type: Boolean, default: false },
     phoneVerified: { type: Boolean, default: false },
     isSocialLogin: { type: Boolean, default: false },

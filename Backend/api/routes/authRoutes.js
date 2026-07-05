@@ -9,6 +9,7 @@ const {
   verifyResetCode,
   resetPassword,
   getMe,
+  updateMe,
 } = require("../controllers/auth");
 const { sendOtp, verifyOtp } = require("../controllers/phoneVerify");
 const { sendVerificationEmail, verifyEmailCode, verifyEmailToken } = require("../controllers/emailVerify");
@@ -35,5 +36,6 @@ router.get("/verify-email-token", verifyEmailToken);
 // Protected
 router.post("/logout", verifyJWT, logoutUser);
 router.get("/me", verifyJWT, getMe);
+router.patch("/me", verifyJWT, updateMe);
 
 module.exports = router;

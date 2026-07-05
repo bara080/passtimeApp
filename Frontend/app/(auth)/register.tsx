@@ -1,19 +1,16 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert, ScrollView } from "react-native";
+import { Alert, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import { AuthScreen, AuthTitle, FormField, GradientButton, SocialAuthRow, FooterLink } from "@/components/auth";
 import { useAuth } from "@/context/AuthProvider";
 import { otpApi } from "@/services/otp";
+import { isValidEmail } from "@/utils/validation";
 import type { UserRole } from "@/services/auth/types";
 
 export default function RegisterScreen() {
   const { role } = useLocalSearchParams<{ role: UserRole }>();
   const { register } = useAuth();
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,8 +18,9 @@ export default function RegisterScreen() {
   const validRole: UserRole = role === "host" ? "host" : "member";
 
   const handleRegister = async () => {
-    if (!firstName.trim() || !email.trim() || !password) {
-      Alert.alert("Error", "Please fill in all required fields.");
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!isValidEmail(normalizedEmail)) {
+      Alert.alert("Error", "Please enter a valid email address.");
       return;
     }
     if (password.length < 8) {
@@ -30,126 +28,59 @@ export default function RegisterScreen() {
       return;
     }
     setLoading(true);
-    const normalizedEmail = email.trim().toLowerCase();
-    const ok = await register({
-      email: normalizedEmail,
-      password,
-      role: validRole,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-    });
+    const ok = await register({ email: normalizedEmail, password, role: validRole });
     if (!ok) {
       setLoading(false);
       Alert.alert("Registration Failed", "Could not create your account. Please try again.");
       return;
     }
     try {
-      await otpApi.sendVerifyEmail({ email: normalizedEmail, displayName: firstName.trim() });
+      await otpApi.sendVerifyEmail({ email: normalizedEmail });
     } catch {
       // Verify screen offers resend — don't block signup on a failed first send
     }
     setLoading(false);
     router.replace({
       pathname: "/(auth)/verify-email",
-      params: { email: normalizedEmail, displayName: firstName.trim(), flow: "signup" },
+      params: { email: normalizedEmail, flow: "signup" },
     });
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View className="flex-1 px-[21px] pt-[79px] pb-8">
-          <Pressable onPress={() => router.back()} className="mb-6">
-            <ArrowLeft size={24} color="#1a1a1a" />
-          </Pressable>
+    <AuthScreen>
+      <AuthTitle
+        title="Let’s get started"
+        subtitle={`Create a ${validRole} account`}
+        description="We just have a few steps to create and setup your profile."
+      />
 
-          <Text className="text-[26px] font-semibold text-[#1a1a1a] mb-1">
-            Create {validRole === "host" ? "Host" : "Member"} Account
-          </Text>
-          <Text className="text-base text-[#666] mb-8">Fill in your details to get started</Text>
-
-          <View className="gap-4 mb-6">
-            <View>
-              <Text className="text-sm font-medium text-[#1a1a1a] mb-2">First Name *</Text>
-              <TextInput
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="John"
-                placeholderTextColor="#aaa"
-                autoCapitalize="words"
-                className="h-[52px] border border-[#d1d5dc] rounded-[8px] px-4 text-base text-[#1a1a1a]"
-              />
-            </View>
-
-            <View>
-              <Text className="text-sm font-medium text-[#1a1a1a] mb-2">Last Name</Text>
-              <TextInput
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Doe"
-                placeholderTextColor="#aaa"
-                autoCapitalize="words"
-                className="h-[52px] border border-[#d1d5dc] rounded-[8px] px-4 text-base text-[#1a1a1a]"
-              />
-            </View>
-
-            <View>
-              <Text className="text-sm font-medium text-[#1a1a1a] mb-2">Email *</Text>
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor="#aaa"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                className="h-[52px] border border-[#d1d5dc] rounded-[8px] px-4 text-base text-[#1a1a1a]"
-              />
-            </View>
-
-            <View>
-              <Text className="text-sm font-medium text-[#1a1a1a] mb-2">Password *</Text>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Min 8 characters"
-                placeholderTextColor="#aaa"
-                secureTextEntry
-                className="h-[52px] border border-[#d1d5dc] rounded-[8px] px-4 text-base text-[#1a1a1a]"
-              />
-            </View>
-          </View>
-
-          <View className="mt-auto">
-            <LinearGradient
-              colors={["#ff9933", "#ff6633"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              className="rounded-[8px] overflow-hidden"
-            >
-              <Pressable
-                onPress={handleRegister}
-                disabled={loading}
-                className="h-[52px] items-center justify-center"
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text className="text-white text-lg font-semibold">Create Account</Text>
-                )}
-              </Pressable>
-            </LinearGradient>
-
-            <Text className="text-xs text-[#999] text-center mt-4">
-              By creating an account, you agree to our Terms of Service and Privacy Policy.
-            </Text>
-          </View>
+      <View className="flex-1 justify-center">
+        <FormField
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+        />
+        <FormField
+          label="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoComplete="new-password"
+        />
+        <View className="mt-2">
+          <GradientButton label="Verify email" onPress={handleRegister} loading={loading} />
         </View>
-      </ScrollView>
-    </SafeAreaView>
+        <SocialAuthRow context="Sign up" />
+      </View>
+
+      <FooterLink
+        prompt="Already have an account?"
+        action="Login"
+        onPress={() => router.push("/(auth)/login")}
+      />
+    </AuthScreen>
   );
 }

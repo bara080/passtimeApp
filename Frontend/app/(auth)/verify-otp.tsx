@@ -1,21 +1,15 @@
-import React, { useRef, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { useState } from "react";
+import { Alert, View } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
-import { useVerifyOtpMutation } from "@/hooks/useSendOtp";
-import { useSendOtpMutation } from "@/hooks/useSendOtp";
+import { AuthScreen, AuthTitle, OtpCodeInput, ResendCodeRow, GradientButton } from "@/components/auth";
+import { useVerifyOtpMutation, useSendOtpMutation } from "@/hooks/useSendOtp";
 import { useOtpTimer } from "@/hooks/useOtpTimer";
 import { PHONE_OTP_LENGTH } from "@/constants/phoneOtpLength";
 import { useAuth } from "@/context/AuthProvider";
+
+function maskPhone(phone: string): string {
+  return phone.length > 4 ? phone.slice(0, 5) + "****" + phone.slice(-3) : phone;
+}
 
 export default function VerifyOtpScreen() {
   const router = useRouter();
@@ -23,36 +17,37 @@ export default function VerifyOtpScreen() {
   const isSignupFlow = flow === "signup";
   const { updateUser } = useAuth();
   const [code, setCode] = useState("");
-  const inputRef = useRef<TextInput>(null);
 
   const verifyOtp = useVerifyOtpMutation();
   const sendOtp = useSendOtpMutation();
   const { seconds, canResend, restart } = useOtpTimer();
 
-  const maskedPhone = phoneNumber
-    ? phoneNumber.slice(0, -4).replace(/\d/g, "•") + phoneNumber.slice(-4)
-    : "";
-
-  const handleChange = async (text: string) => {
-    const digits = text.replace(/\D/g, "").slice(0, PHONE_OTP_LENGTH);
-    setCode(digits);
-
-    if (digits.length === PHONE_OTP_LENGTH) {
-      try {
-        await verifyOtp.mutateAsync({ phoneNumber: phoneNumber ?? "", code: digits });
-        await updateUser({ phoneVerified: true, phoneNumber: phoneNumber ?? undefined });
-        if (isSignupFlow) {
-          router.replace("/(app)");
-        } else {
-          router.back();
-        }
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Invalid code.";
-        Alert.alert("Verification failed", message);
-        setCode("");
-        inputRef.current?.focus();
+  const handleVerify = async (digits: string) => {
+    if (digits.length !== PHONE_OTP_LENGTH) return;
+    try {
+      await verifyOtp.mutateAsync({ phoneNumber: phoneNumber ?? "", code: digits });
+      await updateUser({ phoneVerified: true, phoneNumber: phoneNumber ?? undefined });
+      if (isSignupFlow) {
+        router.replace({
+          pathname: "/(auth)/success",
+          params: {
+            title: "Success",
+            message: "Your OTP has been successfully verified. You’re just last step away.",
+            next: "/(auth)/profile-details",
+          },
+        });
+      } else {
+        router.back();
       }
+    } catch (err: unknown) {
+      Alert.alert("Verification failed", err instanceof Error ? err.message : "Invalid code.");
+      setCode("");
     }
+  };
+
+  const handleChange = (digits: string) => {
+    setCode(digits);
+    if (digits.length === PHONE_OTP_LENGTH) handleVerify(digits);
   };
 
   const handleResend = async () => {
@@ -62,135 +57,28 @@ export default function VerifyOtpScreen() {
       restart();
       setCode("");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to resend.";
-      Alert.alert("Error", message);
+      Alert.alert("Error", err instanceof Error ? err.message : "Failed to resend.");
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={styles.container}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color="#1a1a1a" />
-        </TouchableOpacity>
+    <AuthScreen>
+      <AuthTitle
+        title="Enter One Time Password"
+        description={`We send OTP to your mobile ${maskPhone(phoneNumber ?? "")}. You can check your SMS.`}
+      />
 
-        <Text style={styles.heading}>Enter your code</Text>
-        <Text style={styles.subheading}>
-          We sent a {PHONE_OTP_LENGTH}-digit code to {maskedPhone}
-        </Text>
-
-        <TextInput
-          ref={inputRef}
-          style={styles.hiddenInput}
-          value={code}
-          onChangeText={handleChange}
-          keyboardType="number-pad"
-          maxLength={PHONE_OTP_LENGTH}
-          autoFocus
-          textContentType="oneTimeCode"
-          autoComplete="sms-otp"
-          caretHidden
-        />
-
-        <TouchableOpacity style={styles.dotRow} onPress={() => inputRef.current?.focus()} activeOpacity={1}>
-          {Array.from({ length: PHONE_OTP_LENGTH }).map((_, i) => (
-            <View key={i} style={[styles.dot, code[i] ? styles.dotFilled : null]}>
-              <Text style={styles.dotText}>{code[i] ?? ""}</Text>
-            </View>
-          ))}
-        </TouchableOpacity>
-
-        <View style={styles.resendRow}>
-          {canResend ? (
-            <TouchableOpacity onPress={handleResend} disabled={sendOtp.isPending}>
-              <Text style={styles.resendLink}>
-                {sendOtp.isPending ? "Sending..." : "Resend code"}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.resendTimer}>Resend in {seconds}s</Text>
-          )}
-        </View>
-
-        {verifyOtp.isPending && (
-          <Text style={styles.verifyingText}>Verifying…</Text>
-        )}
+      <View className="flex-1 justify-center">
+        <OtpCodeInput length={PHONE_OTP_LENGTH} value={code} onChangeText={handleChange} autoComplete="sms-otp" />
+        <ResendCodeRow seconds={seconds} canResend={canResend} sending={sendOtp.isPending} onResend={handleResend} />
       </View>
-    </KeyboardAvoidingView>
+
+      <GradientButton
+        label="Verify OTP"
+        onPress={() => handleVerify(code)}
+        loading={verifyOtp.isPending}
+        disabled={code.length !== PHONE_OTP_LENGTH}
+      />
+    </AuthScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#fff" },
-  container: {
-    flex: 1,
-    paddingTop: 79,
-    paddingHorizontal: 21,
-    paddingBottom: 32,
-  },
-  backButton: { marginBottom: 32 },
-  heading: {
-    fontSize: 26,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    marginBottom: 8,
-  },
-  subheading: {
-    fontSize: 16,
-    color: "#6b6b6b",
-    marginBottom: 40,
-    lineHeight: 22,
-  },
-  hiddenInput: {
-    position: "absolute",
-    opacity: 0,
-    width: 1,
-    height: 1,
-  },
-  dotRow: {
-    flexDirection: "row",
-    gap: 12,
-    justifyContent: "center",
-    marginBottom: 32,
-  },
-  dot: {
-    width: 52,
-    height: 60,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: "#d1d5dc",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fafafa",
-  },
-  dotFilled: {
-    borderColor: "#ff6633",
-    backgroundColor: "#fff",
-  },
-  dotText: {
-    fontSize: 24,
-    fontWeight: "600",
-    color: "#1a1a1a",
-  },
-  resendRow: {
-    alignItems: "center",
-  },
-  resendLink: {
-    fontSize: 14,
-    color: "#ff6633",
-    fontWeight: "500",
-  },
-  resendTimer: {
-    fontSize: 14,
-    color: "#6b6b6b",
-  },
-  verifyingText: {
-    marginTop: 16,
-    textAlign: "center",
-    fontSize: 14,
-    color: "#6b6b6b",
-  },
-});

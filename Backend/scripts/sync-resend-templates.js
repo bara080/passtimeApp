@@ -60,6 +60,9 @@ async function resend(method, path, body) {
       results[name] = created.id;
       console.log(`created: ${name} → ${created.id}`);
     }
+    // API-created/updated templates are drafts — publish or sends fail
+    await resend("POST", `/templates/${results[name]}/publish`);
+    console.log(`published: ${name}`);
   }
 
   console.log("\nEnv vars for the templates the backend sends today:");

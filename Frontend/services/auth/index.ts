@@ -5,6 +5,7 @@ import type {
   RegisterPayload,
   RefreshResponse,
   AuthUser,
+  UpdateProfilePayload,
 } from "./types";
 
 function unwrap<T>(res: { data: { status: number; message: string; data: T } }): T {
@@ -47,6 +48,11 @@ export const authApi = {
 
   getMe: async (): Promise<AuthUser> => {
     const res = await axiosInstance.get("/auth/me");
+    return unwrap(res);
+  },
+
+  updateProfile: async (payload: UpdateProfilePayload): Promise<AuthUser> => {
+    const res = await axiosInstance.patch("/auth/me", payload);
     return unwrap(res);
   },
 };

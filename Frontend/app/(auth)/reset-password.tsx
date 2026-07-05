@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, ActivityIndicator, Alert } from "react-native";
+import { Alert, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import { AuthScreen, AuthTitle, FormField, GradientButton } from "@/components/auth";
 import { authApi } from "@/services/auth";
 
 export default function ResetPasswordScreen() {
@@ -32,78 +30,47 @@ export default function ResetPasswordScreen() {
     setLoading(true);
     try {
       await authApi.resetPassword(uid, password);
-      Alert.alert("Success", "Your password has been reset.", [
-        { text: "Sign In", onPress: () => router.replace("/(auth)/login") },
-      ]);
+      router.replace({
+        pathname: "/(auth)/success",
+        params: {
+          title: "Success",
+          message: "Your password has been successfully reset. Please go back to login and access your account.",
+          buttonLabel: "Back to Login",
+          next: "/(auth)/login",
+        },
+      });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Could not reset password.";
-      Alert.alert("Error", message);
+      Alert.alert("Error", err instanceof Error ? err.message : "Could not reset password.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-[21px] pt-[79px] pb-8">
-        <Pressable onPress={() => router.back()} className="mb-6">
-          <ArrowLeft size={24} color="#1a1a1a" />
-        </Pressable>
+    <AuthScreen>
+      <AuthTitle
+        title="Reset password"
+        description="Please enter your new password and confirm it to reset your account password."
+      />
 
-        <Text className="text-[26px] font-semibold text-[#1a1a1a] mb-2">Set new password</Text>
-        <Text className="text-base text-[#666] mb-8">
-          Choose a strong password for your account.
-        </Text>
-
-        <View className="gap-4 mb-6">
-          <View>
-            <Text className="text-sm font-medium text-[#1a1a1a] mb-2">New password</Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Min 8 characters"
-              placeholderTextColor="#aaa"
-              secureTextEntry
-              autoComplete="new-password"
-              className="h-[52px] border border-[#d1d5dc] rounded-[8px] px-4 text-base text-[#1a1a1a]"
-            />
-          </View>
-
-          <View>
-            <Text className="text-sm font-medium text-[#1a1a1a] mb-2">Confirm password</Text>
-            <TextInput
-              value={confirm}
-              onChangeText={setConfirm}
-              placeholder="Repeat your password"
-              placeholderTextColor="#aaa"
-              secureTextEntry
-              autoComplete="new-password"
-              className="h-[52px] border border-[#d1d5dc] rounded-[8px] px-4 text-base text-[#1a1a1a]"
-            />
-          </View>
-        </View>
-
-        <View className="mt-auto">
-          <LinearGradient
-            colors={["#ff9933", "#ff6633"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            className="rounded-[8px] overflow-hidden"
-          >
-            <Pressable
-              onPress={handleReset}
-              disabled={loading}
-              className="h-[52px] items-center justify-center"
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text className="text-white text-lg font-semibold">Reset Password</Text>
-              )}
-            </Pressable>
-          </LinearGradient>
-        </View>
+      <View className="flex-1 justify-center">
+        <FormField
+          label="Enter new password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoComplete="new-password"
+        />
+        <FormField
+          label="Enter confirm new password"
+          value={confirm}
+          onChangeText={setConfirm}
+          secureTextEntry
+          autoComplete="new-password"
+        />
       </View>
-    </SafeAreaView>
+
+      <GradientButton label="Reset Password" onPress={handleReset} loading={loading} />
+    </AuthScreen>
   );
 }

@@ -14,6 +14,7 @@ const { createSession, deleteSession, deleteAllUserSessions } = require("../util
 const { getRedis } = require("../config/redis");
 const { success, created, error } = require("../utils/responseFormatter");
 const AppError = require("../utils/AppError");
+const { isValidEmail, validatePassword, validateName, validateDateOfBirth } = require("../utils/validators");
 const { sendEmail, sendTemplate } = require("../config/resend");
 const { renderTemplate } = require("../emails");
 
@@ -32,6 +33,11 @@ exports.registerUser = async (req, res, next) => {
     if (!["member", "host"].includes(role)) {
       return error(res, 400, "role must be 'member' or 'host'.");
     }
+    if (!isValidEmail(email)) {
+      return error(res, 400, "Please provide a valid email address.");
+    }
+    const passwordError = validatePassword(password);
+    if (passwordError) return error(res, 400, passwordError);
 
     const UserModel = getUserModel(role);
     const existingByEmail = await UserModel.findOne({ email: email.toLowerCase().trim() });
@@ -374,6 +380,59 @@ exports.getMe = async (req, res, next) => {
       emailVerified: user.emailVerified,
       phoneVerified: user.phoneVerified,
       phoneNumber: user.phoneNumber,
+      dateOfBirth: user.dateOfBirth,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── Update Me ─────────────────────────────────────────────────────────────────
+exports.updateMe = async (req, res, next) => {
+  try {
+    const { firstName, lastName, dateOfBirth } = req.body;
+    const updates = {};
+
+    if (firstName !== undefined) {
+      const err1 = validateName(firstName, "firstName");
+      if (err1) return error(res, 400, err1);
+      updates.firstName = String(firstName).trim();
+    }
+    if (lastName !== undefined) {
+      const err2 = validateName(lastName, "lastName");
+      if (err2) return error(res, 400, err2);
+      updates.lastName = String(lastName).trim();
+    }
+    if (dateOfBirth !== undefined) {
+      const { error: dobError, date } = validateDateOfBirth(dateOfBirth);
+      if (dobError) return error(res, 400, dobError);
+      updates.dateOfBirth = date;
+    }
+    if (Object.keys(updates).length === 0) {
+      return error(res, 400, "Nothing to update. Allowed fields: firstName, lastName, dateOfBirth.");
+    }
+    if (updates.firstName || updates.lastName) {
+      const first = updates.firstName ?? req.user.firstName ?? "";
+      const last = updates.lastName ?? req.user.lastName ?? "";
+      updates.displayName = `${first} ${last}`.trim();
+    }
+
+    const UserModel = getUserModel(req.userRole);
+    const user = await UserModel.findOneAndUpdate({ uid: req.user.uid }, updates, { new: true });
+    if (!user) return error(res, 404, "User not found.");
+
+    return success(res, "Profile updated.", {
+      uid: user.uid,
+      email: user.email,
+      role: req.userRole,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
+      phoneNumber: user.phoneNumber,
+      dateOfBirth: user.dateOfBirth,
     });
   } catch (err) {
     next(err);

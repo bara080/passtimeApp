@@ -1,82 +1,64 @@
+import { useState } from "react";
 import { View, Text, Pressable, Image } from "react-native";
 import { router } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import { AuthScreen, AuthTitle, GradientButton } from "@/components/auth";
+import { colors } from "@/constants/theme";
+import type { UserRole } from "@/services/auth/types";
 
-const memberImg = require("@/assets/member .png");
-const hostImg = require("@/assets/host.png");
-
-const ROLES = [
+const ROLES: { role: UserRole; title: string; description: string; image: number }[] = [
   {
-    role: "member" as const,
+    role: "member",
     title: "Member",
-    subtitle: "Discover and book experiences near you",
-    image: memberImg,
+    description: "Find verified members and schedule structured experiences.",
+    image: require("@/assets/auth/role-member.png"),
   },
   {
-    role: "host" as const,
+    role: "host",
     title: "Host",
-    subtitle: "List activities and earn from your space",
-    image: hostImg,
+    description: "Create a profile, set your availability, and receive booking requests.",
+    image: require("@/assets/auth/role-host.png"),
   },
 ];
 
 export default function SignupScreen() {
+  const [selected, setSelected] = useState<UserRole>("member");
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-[21px] pt-[79px] pb-8">
-        <Pressable onPress={() => router.back()} className="mb-6">
-          <ArrowLeft size={24} color="#1a1a1a" />
-        </Pressable>
+    <AuthScreen scroll={false}>
+      <AuthTitle
+        title="How Would You Like to Join?"
+        description="Passtime is built for both members and verified hosts. Choose how you want to participate."
+      />
 
-        <Text style={{ fontSize: 26, fontWeight: "600", color: "#1a1a1a", marginBottom: 6 }}>
-          Join Passtime
-        </Text>
-        <Text style={{ fontSize: 16, color: "#666", marginBottom: 32 }}>
-          Choose how you want to get started
-        </Text>
-
-        <View style={{ gap: 16 }}>
-          {ROLES.map(({ role, title, subtitle, image }) => (
+      <View className="flex-1 justify-center gap-4">
+        {ROLES.map(({ role, title, description, image }) => {
+          const isSelected = selected === role;
+          return (
             <Pressable
               key={role}
-              onPress={() =>
-                router.push({
-                  pathname: "/(auth)/register",
-                  params: { role },
-                })
-              }
+              onPress={() => setSelected(role)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isSelected }}
+              className="flex-row items-center rounded-[12px] border p-4 gap-4"
               style={{
-                borderWidth: 1,
-                borderColor: "#d1d5dc",
-                borderRadius: 16,
-                overflow: "hidden",
-                backgroundColor: "#fafafa",
+                borderColor: isSelected ? colors.accent : colors.border,
+                backgroundColor: isSelected ? "#fff3ec" : "#ffffff",
               }}
             >
-              <Image
-                source={image}
-                style={{ width: "100%", height: 160 }}
-                resizeMode="cover"
-              />
-              <View style={{ padding: 16 }}>
-                <Text style={{ fontSize: 18, fontWeight: "600", color: "#1a1a1a" }}>{title}</Text>
-                <Text style={{ fontSize: 14, color: "#666", marginTop: 4 }}>{subtitle}</Text>
+              <Image source={image} style={{ width: 72, height: 72 }} resizeMode="contain" />
+              <View className="flex-1">
+                <Text className="text-[20px] text-[#1a1a1a] mb-1">{title}</Text>
+                <Text className="text-sm text-[#444] leading-[19px]">{description}</Text>
               </View>
             </Pressable>
-          ))}
-        </View>
-
-        <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 32, gap: 4 }}>
-          <Text style={{ fontSize: 16, color: "#666" }}>Already have an account?</Text>
-          <Pressable onPress={() => router.push("/(auth)/login")}>
-            <Text style={{ fontSize: 16, color: "#ff6633", textDecorationLine: "underline" }}>
-              Sign in
-            </Text>
-          </Pressable>
-        </View>
+          );
+        })}
       </View>
-    </SafeAreaView>
+
+      <GradientButton
+        label="Continue"
+        onPress={() => router.push({ pathname: "/(auth)/register", params: { role: selected } })}
+      />
+    </AuthScreen>
   );
 }

@@ -11,6 +11,7 @@ export type AuthUser = {
   emailVerified: boolean;
   phoneVerified: boolean;
   phoneNumber?: string;
+  dateOfBirth?: string;
 };
 
 export type LoginPayload = {
@@ -38,4 +39,11 @@ export type AuthResponse = {
 export type RefreshResponse = {
   accessToken: string;
   refreshToken: string;
+};
+
+export type UpdateProfilePayload = {
+  firstName?: string;
+  lastName?: string;
+  /** ISO date string, e.g. "1995-06-15" */
+  dateOfBirth?: string;
 };
