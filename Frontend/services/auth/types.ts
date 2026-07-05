@@ -47,3 +47,10 @@ export type UpdateProfilePayload = {
   /** ISO date string, e.g. "1995-06-15" */
   dateOfBirth?: string;
 };
+
+export type SocialLoginPayload = {
+  /** Firebase ID token obtained after signInWithCredential. */
+  idToken: string;
+  role: UserRole;
+  deviceInfo?: string;
+};

@@ -3,6 +3,7 @@ import { View, Text, Pressable, Alert } from "react-native";
 import { router } from "expo-router";
 import { AuthScreen, AuthTitle, FormField, GradientButton, SocialAuthRow, FooterLink } from "@/components/auth";
 import { useAuth } from "@/context/AuthProvider";
+import { useSocialAuth } from "@/hooks/useSocialAuth";
 import { isValidEmail } from "@/utils/validation";
 import type { UserRole } from "@/services/auth/types";
 
@@ -12,6 +13,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("member");
   const [loading, setLoading] = useState(false);
+  const { signInWithGoogle, signInWithApple, pending } = useSocialAuth(role);
 
   const handleLogin = async () => {
     if (!isValidEmail(email) || !password) {
@@ -70,7 +72,7 @@ export default function LoginScreen() {
         </Pressable>
 
         <GradientButton label="Login" onPress={handleLogin} loading={loading} />
-        <SocialAuthRow context="Login" />
+        <SocialAuthRow context="Login" onGoogle={signInWithGoogle} onApple={signInWithApple} pending={pending} />
       </View>
 
       <FooterLink prompt="Don’t have an account?" action="Sign up" onPress={() => router.push("/(auth)/signup")} />

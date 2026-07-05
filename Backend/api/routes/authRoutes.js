@@ -10,6 +10,7 @@ const {
   resetPassword,
   getMe,
   updateMe,
+  socialLogin,
 } = require("../controllers/auth");
 const { sendOtp, verifyOtp } = require("../controllers/phoneVerify");
 const { sendVerificationEmail, verifyEmailCode, verifyEmailToken } = require("../controllers/emailVerify");
@@ -19,6 +20,7 @@ const { otpSendLimiter, otpVerifyLimiter, forgotPasswordLimiter } = require("../
 // Public
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/social", socialLogin);
 router.post("/refresh-token", refreshToken);
 router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);
 router.post("/verify-reset-code", otpVerifyLimiter, verifyResetCode);

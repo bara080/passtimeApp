@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { AuthScreen, AuthTitle, FormField, GradientButton, SocialAuthRow, FooterLink } from "@/components/auth";
 import { useAuth } from "@/context/AuthProvider";
 import { otpApi } from "@/services/otp";
+import { useSocialAuth } from "@/hooks/useSocialAuth";
 import { isValidEmail } from "@/utils/validation";
 import type { UserRole } from "@/services/auth/types";
 
@@ -16,6 +17,7 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const validRole: UserRole = role === "host" ? "host" : "member";
+  const { signInWithGoogle, signInWithApple, pending } = useSocialAuth(validRole);
 
   const handleRegister = async () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -73,7 +75,7 @@ export default function RegisterScreen() {
         <View className="mt-2">
           <GradientButton label="Verify email" onPress={handleRegister} loading={loading} />
         </View>
-        <SocialAuthRow context="Sign up" />
+        <SocialAuthRow context="Sign up" onGoogle={signInWithGoogle} onApple={signInWithApple} pending={pending} />
       </View>
 
       <FooterLink

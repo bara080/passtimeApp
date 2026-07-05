@@ -365,6 +365,84 @@ exports.resetPassword = async (req, res, next) => {
   }
 };
 
+// ── Social Login (Google / Apple via Firebase ID token) ──────────────────────
+exports.socialLogin = async (req, res, next) => {
+  try {
+    const { idToken, role, deviceInfo } = req.body;
+    if (!idToken || !role) return error(res, 400, "idToken and role are required.");
+    if (!["member", "host"].includes(role)) {
+      return error(res, 400, "role must be 'member' or 'host'.");
+    }
+
+    let decoded;
+    try {
+      decoded = await admin.auth().verifyIdToken(idToken);
+    } catch (e) {
+      return error(res, 401, "Invalid or expired social credential.");
+    }
+
+    const email = (decoded.email || "").toLowerCase().trim();
+    if (!email) return error(res, 400, "This social account does not expose an email address.");
+
+    const UserModel = getUserModel(role);
+    let user = await UserModel.findOne({ email });
+    if (user && !user.isActive) return error(res, 403, "Account is deactivated.");
+
+    if (!user) {
+      const fullName = (decoded.name || "").trim();
+      const [firstName, ...rest] = fullName.split(/\s+/);
+      user = await UserModel.create({
+        uid: decoded.uid,
+        email,
+        role,
+        firstName: firstName || "",
+        lastName: rest.join(" "),
+        displayName: fullName,
+        avatarUrl: decoded.picture || undefined,
+        emailVerified: Boolean(decoded.email_verified),
+        isSocialLogin: true,
+      });
+    } else if (decoded.email_verified && !user.emailVerified) {
+      // Provider-verified email upgrades the flag on an existing account
+      user.emailVerified = true;
+      await user.save();
+    }
+
+    const sessionId = uuidv4();
+    await createSession({ sessionId, uid: user.uid, role, deviceInfo });
+
+    const accessToken = generateAccessToken({ uid: user.uid, role, sessionId });
+    const refreshToken = generateRefreshToken({ uid: user.uid, role, sessionId });
+
+    const RefreshModel = user.db.model("RefreshToken");
+    await RefreshModel.create({
+      uid: user.uid,
+      token: refreshToken,
+      expiresAt: getRefreshExpiryDate(),
+      deviceInfo: deviceInfo || "Unknown",
+    });
+
+    return success(res, "Login successful.", {
+      accessToken,
+      refreshToken,
+      user: {
+        uid: user.uid,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        emailVerified: user.emailVerified,
+        phoneVerified: user.phoneVerified,
+        phoneNumber: user.phoneNumber,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // ── Get Me ────────────────────────────────────────────────────────────────────
 exports.getMe = async (req, res, next) => {
   try {

@@ -8,6 +8,7 @@ require("./config/firebase"); // initialize firebase admin
 const errorHandler = require("./middlewares/errorHandler");
 const authRoutes = require("./routes/authRoutes");
 const stripeRoutes = require("./routes/stripeRoutes");
+const mediaRoutes = require("./routes/mediaRoutes");
 
 const app = express();
 
@@ -110,6 +111,7 @@ app.use(async (req, res, next) => {
 // ── Routes ───────────────────────────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/stripe", stripeRoutes);
+app.use("/api/media", mediaRoutes);
 
 // ── Sentry error handler ─────────────────────────────────────────────────────
 Sentry.setupExpressErrorHandler(app);

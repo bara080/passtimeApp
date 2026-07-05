@@ -6,6 +6,7 @@ import type {
   RefreshResponse,
   AuthUser,
   UpdateProfilePayload,
+  SocialLoginPayload,
 } from "./types";
 
 function unwrap<T>(res: { data: { status: number; message: string; data: T } }): T {
@@ -53,6 +54,11 @@ export const authApi = {
 
   updateProfile: async (payload: UpdateProfilePayload): Promise<AuthUser> => {
     const res = await axiosInstance.patch("/auth/me", payload);
+    return unwrap(res);
+  },
+
+  socialLogin: async (payload: SocialLoginPayload): Promise<AuthResponse> => {
+    const res = await axiosInstance.post("/auth/social", payload);
     return unwrap(res);
   },
 };

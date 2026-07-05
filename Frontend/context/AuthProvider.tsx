@@ -21,7 +21,7 @@ import {
 } from "@/utils/secureStore";
 import { updateSession, type AuthSession } from "@/utils/sessionManager";
 import { authApi } from "@/services/auth";
-import type { AuthUser, LoginPayload, RegisterPayload } from "@/services/auth/types";
+import type { AuthUser, LoginPayload, RegisterPayload, SocialLoginPayload } from "@/services/auth/types";
 
 type AuthContextType = {
   initializing: boolean;
@@ -29,6 +29,7 @@ type AuthContextType = {
   user: AuthUser | null;
   login: (payload: LoginPayload) => Promise<boolean>;
   register: (payload: RegisterPayload) => Promise<boolean>;
+  socialLogin: (payload: Omit<SocialLoginPayload, "deviceInfo">) => Promise<boolean>;
   signOut: () => Promise<void>;
   setUser: (user: AuthUser | null) => void;
   updateUser: (patch: Partial<AuthUser>) => Promise<void>;
@@ -40,6 +41,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   login: async () => false,
   register: async () => false,
+  socialLogin: async () => false,
   signOut: async () => {},
   setUser: () => {},
   updateUser: async () => {},
@@ -175,6 +177,24 @@ export function SessionProvider({ children }: PropsWithChildren) {
     }
   }, [persistSession]);
 
+  const socialLogin = useCallback(async (payload: Omit<SocialLoginPayload, "deviceInfo">): Promise<boolean> => {
+    try {
+      const deviceInfo = Device.modelName ?? "Unknown device";
+      const res = await authApi.socialLogin({ ...payload, deviceInfo });
+      await persistSession({
+        uid: res.user.uid,
+        role: res.user.role,
+        accessToken: res.accessToken,
+        refreshToken: res.refreshToken,
+        user: res.user,
+      });
+      return true;
+    } catch (err) {
+      console.error("[AuthProvider] social login error:", err);
+      return false;
+    }
+  }, [persistSession]);
+
   const register = useCallback(async (payload: RegisterPayload): Promise<boolean> => {
     try {
       const deviceInfo = Device.modelName ?? "Unknown device";
@@ -216,8 +236,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }, []);
 
   const value = useMemo(
-    () => ({ initializing, session, user, login, register, signOut, setUser, updateUser }),
-    [initializing, session, user, login, register, signOut, updateUser]
+    () => ({ initializing, session, user, login, register, socialLogin, signOut, setUser, updateUser }),
+    [initializing, session, user, login, register, socialLogin, signOut, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
