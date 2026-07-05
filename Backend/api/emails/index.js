@@ -1,5 +1,5 @@
-// TimeWorth transactional email templates.
-// Source of truth: Figma "TimeWorth" file f5O9nqJROMOfHLu2a95SLh, section "Email Template" (node 1176-6082).
+// Passtime transactional email templates.
+// Source of truth: Figma "Passtime" file f5O9nqJROMOfHLu2a95SLh, section "Email Template" (node 1176-6082).
 // Variables use Resend's {{{VAR}}} syntax so the same HTML works as a Resend
 // hosted template (pushed via scripts/sync-resend-templates.js) and for local
 // rendering via renderTemplate().

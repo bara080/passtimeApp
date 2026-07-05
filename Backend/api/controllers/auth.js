@@ -15,6 +15,7 @@ const { getRedis } = require("../config/redis");
 const { success, created, error } = require("../utils/responseFormatter");
 const AppError = require("../utils/AppError");
 const { isValidEmail, validatePassword, validateName, validateDateOfBirth } = require("../utils/validators");
+const { verifySocialToken } = require("../utils/socialTokens");
 const { sendEmail, sendTemplate } = require("../config/resend");
 const { renderTemplate } = require("../emails");
 
@@ -368,7 +369,8 @@ exports.resetPassword = async (req, res, next) => {
 // ── Social Login (Google / Apple via Firebase ID token) ──────────────────────
 exports.socialLogin = async (req, res, next) => {
   try {
-    const { idToken, role, deviceInfo } = req.body;
+    const { idToken, role, provider, deviceInfo } = req.body;
+    console.log("[social] request — provider:", provider, "| role:", role, "| idToken len:", idToken ? String(idToken).length : 0, "| device:", deviceInfo);
     if (!idToken || !role) return error(res, 400, "idToken and role are required.");
     if (!["member", "host"].includes(role)) {
       return error(res, 400, "role must be 'member' or 'host'.");
@@ -376,8 +378,23 @@ exports.socialLogin = async (req, res, next) => {
 
     let decoded;
     try {
-      decoded = await admin.auth().verifyIdToken(idToken);
+      if (provider === "google" || provider === "apple") {
+        // Direct provider verification (Google idToken / Apple identityToken)
+        const identity = await verifySocialToken(provider, idToken);
+        decoded = {
+          uid: identity.sub,
+          email: identity.email,
+          email_verified: identity.emailVerified,
+          name: identity.name,
+          picture: identity.picture,
+        };
+      } else {
+        // Legacy path: Firebase ID token from client-side signInWithCredential
+        decoded = await admin.auth().verifyIdToken(idToken);
+      }
+      console.log("[social] token verified — uid:", decoded.uid, "| email:", decoded.email, "| email_verified:", decoded.email_verified);
     } catch (e) {
+      console.error("[social] token verification FAILED —", e.code || "", e.message);
       return error(res, 401, "Invalid or expired social credential.");
     }
 
@@ -386,6 +403,7 @@ exports.socialLogin = async (req, res, next) => {
 
     const UserModel = getUserModel(role);
     let user = await UserModel.findOne({ email });
+    console.log("[social] existing user:", user ? `yes (uid ${user.uid}, social=${user.isSocialLogin})` : "no — creating");
     if (user && !user.isActive) return error(res, 403, "Account is deactivated.");
 
     if (!user) {
@@ -422,6 +440,7 @@ exports.socialLogin = async (req, res, next) => {
       deviceInfo: deviceInfo || "Unknown",
     });
 
+    console.log("[social] SUCCESS — session created for", user.uid, "as", role);
     return success(res, "Login successful.", {
       accessToken,
       refreshToken,
@@ -439,6 +458,7 @@ exports.socialLogin = async (req, res, next) => {
       },
     });
   } catch (err) {
+    console.error("[social] UNHANDLED —", err.message);
     next(err);
   }
 };

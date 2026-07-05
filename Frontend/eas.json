@@ -9,7 +9,7 @@
       "distribution": "internal",
       "autoIncrement": true,
       "ios": {
-        "simulator": false
+        "simulator": true
       },
       "android": {
         "buildType": "apk"
@@ -20,7 +20,8 @@
         "EXPO_PUBLIC_VEXO_API_KEY": "a4417578-ea34-478b-97a3-3c41bc7046d4",
         "EXPO_PUBLIC_SENTRY_DSN": "https://fc32fa7fe8edb60f24e91769f06d5f7b@o4510582988603392.ingest.us.sentry.io/4511675246051328",
         "EXPO_PUBLIC_LOGROCKET_APP_ID": "ydig2k/passtime-app",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1060259065398-4t48o67veu5n1qnm70bj1rp59ubf30u3.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1060259065398-4t48o67veu5n1qnm70bj1rp59ubf30u3.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1060259065398-i5lhsa08btjst9364n1k6fpbkibjfofs.apps.googleusercontent.com"
       }
     },
     "preview": {
@@ -34,7 +35,8 @@
         "EXPO_PUBLIC_VEXO_API_KEY": "a4417578-ea34-478b-97a3-3c41bc7046d4",
         "EXPO_PUBLIC_SENTRY_DSN": "https://fc32fa7fe8edb60f24e91769f06d5f7b@o4510582988603392.ingest.us.sentry.io/4511675246051328",
         "EXPO_PUBLIC_LOGROCKET_APP_ID": "ydig2k/passtime-app",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1060259065398-4t48o67veu5n1qnm70bj1rp59ubf30u3.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1060259065398-4t48o67veu5n1qnm70bj1rp59ubf30u3.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1060259065398-i5lhsa08btjst9364n1k6fpbkibjfofs.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -44,7 +46,14 @@
         "EXPO_PUBLIC_VEXO_API_KEY": "a4417578-ea34-478b-97a3-3c41bc7046d4",
         "EXPO_PUBLIC_SENTRY_DSN": "https://fc32fa7fe8edb60f24e91769f06d5f7b@o4510582988603392.ingest.us.sentry.io/4511675246051328",
         "EXPO_PUBLIC_LOGROCKET_APP_ID": "ydig2k/passtime-app",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1060259065398-4t48o67veu5n1qnm70bj1rp59ubf30u3.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1060259065398-4t48o67veu5n1qnm70bj1rp59ubf30u3.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1060259065398-i5lhsa08btjst9364n1k6fpbkibjfofs.apps.googleusercontent.com"
+      }
+    },
+    "development-device": {
+      "extends": "development",
+      "ios": {
+        "simulator": false
       }
     }
   },

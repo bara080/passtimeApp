@@ -9,6 +9,7 @@ import LogRocket from "@logrocket/react-native";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { QueryProvider } from "@/components/queryproviders";
 import { SessionProvider } from "@/context/AuthProvider";
+import { ToastProvider } from "@/context/ToastProvider";
 
 Sentry.init({
   dsn:
@@ -48,9 +49,11 @@ function RootLayout() {
   return (
     <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY} merchantIdentifier="merchant.com.passtime.app">
       <QueryProvider>
-        <SessionProvider>
-          <Stack screenOptions={{ headerShown: false }} />
-        </SessionProvider>
+        <ToastProvider>
+          <SessionProvider>
+            <Stack screenOptions={{ headerShown: false }} />
+          </SessionProvider>
+        </ToastProvider>
       </QueryProvider>
     </StripeProvider>
   );

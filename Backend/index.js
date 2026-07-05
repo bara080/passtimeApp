@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 5001;
 
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`🚀 TimeWorth API running on port ${PORT}`);
+    console.log(`🚀 Passtime API running on port ${PORT}`);
   });
 }
 

@@ -36,13 +36,19 @@ function isPublicAuthRequest(url?: string): boolean {
   return publicPaths.has(path);
 }
 
+console.log("[http] API_BASE_URL =", API_BASE_URL);
+
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
+  // XHR adapter hangs on POST bodies on recent iOS simulator runtimes — use the
+  // fetch adapter (native fetch works; empirically verified 2026-07-05)
+  adapter: "fetch",
   timeout: 30000,
   headers: { "Content-Type": "application/json" },
 });
 
 axiosInstance.interceptors.request.use(async (config) => {
+  console.log("[http] →", config.method?.toUpperCase(), config.url);
   const token = await getValidAccessToken();
   if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -54,6 +60,13 @@ axiosInstance.interceptors.response.use(
   (res) => res,
   async (err) => {
     if (!err.response) {
+      console.log(
+        "[http] ✗ no-response error:",
+        err?.message,
+        "| code:", err?.code,
+        "| url:", err?.config?.url,
+        "| name:", err?.name
+      );
       return Promise.reject({
         status: 0,
         message: "Network error. Please check your connection.",
@@ -103,6 +116,7 @@ axiosInstance.interceptors.response.use(
 
 export const refreshAxiosInstance = axios.create({
   baseURL: API_BASE_URL,
+  adapter: "fetch",
   timeout: 30000,
   headers: { "Content-Type": "application/json" },
 });

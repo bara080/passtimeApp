@@ -49,8 +49,9 @@ export type UpdateProfilePayload = {
 };
 
 export type SocialLoginPayload = {
-  /** Firebase ID token obtained after signInWithCredential. */
+  /** Raw provider token: Google idToken or Apple identityToken. */
   idToken: string;
+  provider: "google" | "apple";
   role: UserRole;
   deviceInfo?: string;
 };

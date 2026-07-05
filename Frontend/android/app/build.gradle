@@ -89,7 +89,7 @@ android {
 
     namespace 'com.passtime.app'
     defaultConfig {
-        applicationId 'com.passtime.app'
+        applicationId 'tech.clickbuild.passtime'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
