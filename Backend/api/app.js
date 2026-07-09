@@ -5,7 +5,8 @@ const cors = require("cors");
 const Sentry = require("@sentry/node");
 const { connectDB, setMongoReadyCallback } = require("./config/db");
 const { connectRedis } = require("./config/redis");
-require("./config/firebase"); // initialize firebase admin
+// Firebase Admin is now lazy — see ./config/firebase.js — so cold starts
+// don't pay the ~200ms initializeApp cost synchronously at module require.
 const errorHandler = require("./middlewares/errorHandler");
 const authRoutes = require("./routes/authRoutes");
 const stripeRoutes = require("./routes/stripeRoutes");
@@ -16,6 +17,10 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
+
+// ── Proxy trust — Vercel edge forwards X-Forwarded-For; without this,
+// express-rate-limit throws on every request and req.ip is wrong.
+app.set("trust proxy", 1);
 
 // ── Global readiness flags ──────────────────────────────────────────────────
 global.__DB_READY__ = false;
@@ -79,7 +84,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Health check ────────────────────────────────────────────────────────────
+// ── Health check — MUST be above the readiness gate so monitoring probes
+// (and Vercel keep-warm pings) can hit it without blocking on infra boot.
 app.get("/api/health", (req, res) => {
   res.json({
     status: 0,

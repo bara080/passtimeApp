@@ -14,9 +14,13 @@ function createRedisClient() {
     url,
     socket: {
       tls: isTLS,
+      // Fail fast on cold start — Vercel serverless can't afford a 30s wait.
+      connectTimeout: 5000,
+      keepAlive: 15000,
       reconnectStrategy: (retries) => {
-        console.log(`[redis] reconnect attempt ${retries}`);
-        return Math.min(retries * 100, 3000);
+        // Cap at 3 retries with quick backoff — after that, degrade rather than block.
+        if (retries > 3) return new Error("Redis unavailable — giving up");
+        return Math.min(retries * 150, 1500);
       },
     },
   });
@@ -38,9 +42,10 @@ async function connectRedis() {
       if (!redisClient) redisClient = createRedisClient();
       if (!redisClient.isOpen) await redisClient.connect();
 
-      await redisClient.set("healthcheck", "ok", { EX: 10 });
-      const result = await redisClient.get("healthcheck");
-      if (result !== "ok") throw new Error("Redis healthcheck failed");
+      // Cheap PING replaces the SET+GET round-trip we used to run — half the
+      // number of RTTs on every cold start.
+      const pong = await redisClient.ping();
+      if (pong !== "PONG") throw new Error(`Redis PING returned ${pong}`);
 
       console.log("🚀 Redis connected & healthy");
       return;
@@ -52,7 +57,7 @@ async function connectRedis() {
       } catch {}
       redisClient = null;
       if (attempt < maxAttempts) {
-        await sleep(Math.min(8000, 1000 * 2 ** (attempt - 1)));
+        await sleep(Math.min(2000, 300 * 2 ** (attempt - 1)));
       }
     }
   }

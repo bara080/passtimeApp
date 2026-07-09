@@ -27,12 +27,14 @@ function refreshMongoReadyFromConnections() {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const sharedMongoOptions = {
-  connectTimeoutMS: 30000,
+  connectTimeoutMS: 10000,
   socketTimeoutMS: 45000,
-  serverSelectionTimeoutMS: 30000,
+  serverSelectionTimeoutMS: 10000,
   maxPoolSize: 10,
   minPoolSize: 0,
-  maxIdleTimeMS: 55000,
+  // Bumped from 55s — Vercel Lambda stays warm ~5min, so a longer idle keeps
+  // the pool alive across successive requests without a reconnect.
+  maxIdleTimeMS: 270000,
   retryWrites: true,
 };
 

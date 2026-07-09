@@ -5,7 +5,9 @@ const passwordResetSchema = new mongoose.Schema(
     email: { type: String, required: true, lowercase: true, trim: true, index: true },
     uid: { type: String, required: true },
     code: { type: String, required: true },
-    expiresAt: { type: Date, required: true, index: true },
+    // TTL index defined below via schema.index() — no field-level `index: true`
+    // (Mongoose logs a duplicate-index warning otherwise).
+    expiresAt: { type: Date, required: true },
     attempts: { type: Number, default: 0 },
   },
   { timestamps: true }
