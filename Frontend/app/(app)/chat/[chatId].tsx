@@ -56,11 +56,17 @@ export default function ChatDetailScreen() {
   const listRef = useRef<FlatList<Row>>(null);
   const chat = details.data?.chat;
   const booking = useBookingDetails(chat?.bookingId ?? null);
-  const otherSnapshot = useMemo(() => {
-    if (!booking.data || !chat) return null;
+  // Prefer the fresh server-side profile (chat.md §5b) — falls back to the
+  // booking-time snapshot if the extended getChat response isn't available yet.
+  const otherProfile = useMemo(() => {
+    if (!details.data || !chat) return null;
+    const p = chat.viewerRole === "member" ? details.data.hostProfile : details.data.memberProfile;
+    if (p?.displayName || p?.avatarUrl) return p;
+    if (!booking.data) return p;
     const b = booking.data.booking;
-    return chat.viewerRole === "member" ? b.hostSnapshot : b.memberSnapshot;
-  }, [booking.data, chat]);
+    const snap = chat.viewerRole === "member" ? b.hostSnapshot : b.memberSnapshot;
+    return { uid: "", displayName: snap.displayName, avatarUrl: snap.photoUrl ?? null, professionalRole: null };
+  }, [details.data, booking.data, chat]);
 
   // Live subscription — falls back to REST history if the RTDB listener never
   // fires (no config / offline / rules).
@@ -72,10 +78,26 @@ export default function ChatDetailScreen() {
     return unsub;
   }, [chatId]);
 
-  // Cold-start hydration from REST — replaces state only if RTDB hasn't filled it.
+  // Hydration + polling merge: whenever REST history refreshes, take its
+  // messages as authoritative but preserve any local optimistic entries that
+  // haven't been reflected server-side yet (identified by their `optimistic-`
+  // id prefix). Also skip if the RTDB listener is already ahead.
   useEffect(() => {
-    if (history.data && messages.length === 0) setMessages(history.data);
-  }, [history.data, messages.length]);
+    if (!history.data) return;
+    setMessages((prev) => {
+      const rtdbAhead = prev.length > history.data.length &&
+        !prev.every((m) => m.id.startsWith("optimistic-"));
+      if (rtdbAhead) return prev;
+      const optimisticQueue = prev.filter((m) => m.id.startsWith("optimistic-"));
+      const merged = [...history.data];
+      for (const opt of optimisticQueue) {
+        if (!merged.some((m) => m.text === opt.text && m.sender === opt.sender && Math.abs(m.timestamp - opt.timestamp) < 5000)) {
+          merged.push(opt);
+        }
+      }
+      return merged;
+    });
+  }, [history.data]);
 
   // Typing presence — only my counterparty triggers the indicator.
   useEffect(() => {
@@ -92,12 +114,44 @@ export default function ChatDetailScreen() {
   const rows = useMemo(() => (user?.uid ? groupWithSeparators(messages, user.uid) : []), [messages, user?.uid]);
 
   const onSend = useCallback(async (text: string) => {
+    if (!user?.uid) return;
+    // Optimistic append — the sender sees their own message immediately even
+    // if RTDB is disabled or the listener hasn't fired yet. If the send
+    // fails, we roll it back below.
+    const optimisticId = `optimistic-${user.uid}-${Date.now()}`;
+    const optimistic: RtdbMessage = {
+      id: optimisticId,
+      sender: user.uid,
+      senderRole: chat?.viewerRole ?? "member",
+      senderName: user.displayName || user.firstName || "You",
+      text,
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
     try {
-      await send.mutateAsync(text);
+      const res = await send.mutateAsync(text);
+      // Replace the optimistic entry with the real one when we can build it.
+      setMessages((prev) => {
+        const withoutOptimistic = prev.filter((m) => m.id !== optimisticId);
+        const real: RtdbMessage = {
+          id: res.messageId,
+          sender: user.uid,
+          senderRole: optimistic.senderRole,
+          senderName: optimistic.senderName,
+          text,
+          timestamp: optimistic.timestamp,
+        };
+        // Dedup against a listener that may have already delivered the same id.
+        if (withoutOptimistic.some((m) => m.id === real.id)) return withoutOptimistic;
+        return [...withoutOptimistic, real];
+      });
+      // Also refetch REST history so the receiver's next poll is consistent.
+      history.refetch();
     } catch (err) {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
       toast.error("Message failed", err instanceof Error ? err.message : "Please try again.");
     }
-  }, [send, toast]);
+  }, [send, toast, user?.uid, user?.displayName, user?.firstName, chat?.viewerRole, history]);
 
   const onTyping = useCallback((isTyping: boolean) => {
     if (!chatId || !user?.uid) return;
@@ -122,8 +176,12 @@ export default function ChatDetailScreen() {
     );
   }
 
-  const otherName = otherSnapshot?.displayName ?? (chat.viewerRole === "member" ? "Host" : "Member");
-  const otherPhotoUrl = otherSnapshot?.photoUrl;
+  const otherName = otherProfile?.displayName ?? (chat.viewerRole === "member" ? "Host" : "Member");
+  const otherPhotoUrl = otherProfile?.avatarUrl;
+  // Read-receipt threshold: my message is "read" if the OTHER side has read
+  // the chat past its timestamp (chat.md §5c).
+  const otherLastReadAt = chat.viewerRole === "member" ? chat.lastReadAt.host : chat.lastReadAt.member;
+  const otherLastReadTs = otherLastReadAt ? new Date(otherLastReadAt).getTime() : 0;
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-[#0d0d0d]" edges={["top", "left", "right"]}>
@@ -153,6 +211,13 @@ export default function ChatDetailScreen() {
                 text={item.message.text}
                 timestamp={item.message.timestamp}
                 fromSelf={item.fromSelf}
+                deliveryState={
+                  item.fromSelf
+                    ? item.message.timestamp <= otherLastReadTs
+                      ? "read"
+                      : "sent"
+                    : undefined
+                }
               />
             )
           }

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { View, TextInput, Pressable } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Send } from "lucide-react-native";
 import { useThemeColors } from "@/hooks/useThemeColors";
 
@@ -15,6 +16,7 @@ const TYPING_STOP_DELAY_MS = 3000;
 /** Text field + accent send button; emits typing start/stop with a debounce. */
 export function ChatInput({ onSend, onTyping, disabled, placeholder = "Messageâ€¦" }: ChatInputProps) {
   const { palette } = useThemeColors();
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const typingRef = useRef(false);
@@ -57,8 +59,12 @@ export function ChatInput({ onSend, onTyping, disabled, placeholder = "Messageâ€
 
   return (
     <View
-      className="flex-row items-end gap-2 px-4 py-2 border-t"
-      style={{ borderColor: palette.border, backgroundColor: palette.background }}
+      className="flex-row items-end gap-2 px-4 pt-2 border-t"
+      style={{
+        borderColor: palette.border,
+        backgroundColor: palette.background,
+        paddingBottom: Math.max(insets.bottom, 12),
+      }}
     >
       <TextInput
         value={text}

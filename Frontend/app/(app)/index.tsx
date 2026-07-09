@@ -14,6 +14,7 @@ import {
 } from "@/components/home";
 import { useDiscoverHosts } from "@/services/hosts/hooks";
 import { useMyBookings } from "@/services/bookings/hooks";
+import { useCreateChat } from "@/services/chat/hooks";
 import type { HostCard } from "@/services/hosts/types";
 import type { ExperienceTypeKey } from "@/services/host/types";
 import { getRecentlyViewed, addRecentlyViewed } from "@/utils/recentlyViewed";
@@ -35,6 +36,16 @@ export default function HomeScreen() {
   const current = useMyBookings("current");
   const nextUpcoming = upcoming.data?.[0];
   const activeBooking = current.data?.[0];
+
+  const createChat = useCreateChat();
+  const openChatForBooking = async (bookingId: string) => {
+    try {
+      const res = await createChat.mutateAsync(bookingId);
+      router.push({ pathname: "/(app)/chat/[chatId]", params: { chatId: res.chat.chatId } } as unknown as Href);
+    } catch (err) {
+      toast.error("Could not open chat", err instanceof Error ? err.message : "Please try again.");
+    }
+  };
 
   const recommended = useDiscoverHosts({ section: "recommended", limit: 10 });
   const nearby = useDiscoverHosts(
@@ -124,7 +135,7 @@ export default function HomeScreen() {
                   params: { bookingId: activeBooking.bookingId },
                 } as unknown as Href)
               }
-              onChat={() => toast.info("Coming soon", "Chat unlocks after slice 7.")}
+              onChat={() => openChatForBooking(activeBooking.bookingId)}
             />
           </>
         ) : nextUpcoming ? (
@@ -138,7 +149,7 @@ export default function HomeScreen() {
                   params: { bookingId: nextUpcoming.bookingId },
                 } as unknown as Href)
               }
-              onChat={() => toast.info("Coming soon", "Chat unlocks after slice 7.")}
+              onChat={() => openChatForBooking(nextUpcoming.bookingId)}
             />
           </>
         ) : null}

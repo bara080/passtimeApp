@@ -59,6 +59,14 @@ axiosInstance.interceptors.request.use(async (config) => {
 axiosInstance.interceptors.response.use(
   (res) => res,
   async (err) => {
+    // Surface 4xx/5xx server envelopes in Metro so debugging validation errors
+    // isn't a guessing game. Success payloads pass through untouched above.
+    if (err?.response && __DEV__) {
+      const status = err.response.status;
+      const data = err.response.data;
+      const msg = typeof data === "object" && data && "message" in data ? (data as { message?: string }).message : undefined;
+      console.log(`[http] ✗ ${status}`, err?.config?.method?.toUpperCase(), err?.config?.url, "|", msg ?? JSON.stringify(data)?.slice(0, 200));
+    }
     if (!err.response) {
       console.log(
         "[http] ✗ no-response error:",

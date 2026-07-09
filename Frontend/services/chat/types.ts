@@ -21,6 +21,21 @@ export type Chat = {
 export type ChatListResponse = { chats: Chat[]; unreadCount: number };
 export type ChatSendResponse = { chat: Chat; messageId: string };
 
+/** Fresh profile of a chat participant returned by GET /chats/:id. */
+export type ChatParticipantProfile = {
+  uid: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  professionalRole: string | null;
+};
+
+export type ChatDetailsResponse = {
+  chat: Chat;
+  viewerRole: "member" | "host";
+  memberProfile: ChatParticipantProfile | null;
+  hostProfile: ChatParticipantProfile | null;
+};
+
 /** Historical message pulled from GET /chats/:chatId/messages (or via RTDB listener). */
 export type Message = {
   id: string;

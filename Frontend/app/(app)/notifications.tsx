@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { View, Text, FlatList, Pressable, RefreshControl, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
-import { MoreVertical, Bell, CheckCheck, Trash2 } from "lucide-react-native";
+import { MoreVertical, Bell, CheckCheck, Trash2, ArrowLeft } from "lucide-react-native";
 import { ScreenHeader } from "@/components/ui";
+import type { Href as _Href } from "expo-router";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useNotifications } from "@/context/NotificationProvider";
 import { useMarkAllRead, useClearAllNotifications, useMarkNotificationRead } from "@/services/notifications/hooks";
@@ -77,10 +78,20 @@ export default function NotificationsScreen() {
     }
   };
 
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace("/(app)" as unknown as _Href);
+  };
+
   if (!loading && notifications.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-[#0d0d0d]">
-        <ScreenHeader title="Notifications" />
+        <View className="px-[21px] mt-6 mb-2">
+          <Pressable onPress={goBack} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
+            <ArrowLeft size={24} color={palette.textPrimary} />
+          </Pressable>
+        </View>
+        <ScreenHeader title="Notifications" showBack={false} />
         <EmptyState
           Icon={Bell}
           heading="You're all caught up"
@@ -92,8 +103,11 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-[#0d0d0d]">
-      <View className="px-[21px] flex-row items-center justify-between mt-6 mb-6">
-        <Text className="text-[26px]" style={{ color: palette.textPrimary }}>Notifications</Text>
+      <View className="px-[21px] flex-row items-center gap-3 mt-6 mb-6">
+        <Pressable onPress={goBack} hitSlop={8} accessibilityRole="button" accessibilityLabel="Go back">
+          <ArrowLeft size={24} color={palette.textPrimary} />
+        </Pressable>
+        <Text className="text-[26px] flex-1" style={{ color: palette.textPrimary }}>Notifications</Text>
         <Pressable onPress={() => setMenuOpen(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Notifications menu">
           <MoreVertical size={22} color={palette.textPrimary} />
         </Pressable>

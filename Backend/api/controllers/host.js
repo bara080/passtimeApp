@@ -1,5 +1,12 @@
-const { getUserModel } = require("../config/db");
+const { getUserModel, getConnection } = require("../config/db");
 const { toPublicHostCard } = require("../utils/publicProjections");
+const {
+  computeEarnings,
+  computeRevenueTrend,
+  computePerformance,
+  computePerformanceTrend,
+  computeAvailabilityThisWeek,
+} = require("../utils/dashboardAggregations");
 const { EXPERIENCE_TYPES } = require("../utils/hostValidators");
 const { success, error } = require("../utils/responseFormatter");
 const { validateAvailability } = require("../utils/availabilityValidators");
@@ -150,6 +157,71 @@ exports.discoverHosts = async (req, res, next) => {
       hosts: hosts.map(toPublicHostCard),
       offset,
       limit,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /api/host/dashboard ──────────────────────────────────────────────────
+// One-round-trip aggregation for the host dashboard (hostDashboardDesign.md).
+// Host-only. Money in cents. Pure computations live in
+// api/utils/dashboardAggregations.js so this controller is thin.
+exports.getDashboard = async (req, res, next) => {
+  try {
+    if (req.userRole !== "host") return error(res, 403, "Host account required.");
+
+    const now = new Date();
+    const Booking = getConnection("member").model("Booking");
+
+    // 30d window is the widest thing any aggregation reads.
+    const cutoff = new Date(now.getTime() - 30 * 24 * 3600_000);
+    const bookings = await Booking.find({
+      hostUid: req.user.uid,
+      $or: [
+        { createdAt: { $gte: cutoff } },
+        { status: { $in: ["confirmed", "active"] } }, // include long-scheduled active/confirmed
+      ],
+    }).lean();
+
+    const pendingRequestCount = bookings.filter((b) => b.status === "pending").length;
+
+    // Verification flags — profile side is local; bank is best-effort against
+    // Stripe (skipped if not configured or the account doc isn't set yet).
+    const profileVerified = Boolean(
+      req.user.isActive &&
+      req.user.emailVerified &&
+      req.user.phoneVerified &&
+      req.user.hostOnboardingComplete
+    );
+
+    // Bank verification (v1): we do NOT hit Stripe here — dashboard load is
+    // hot-path and a Stripe accounts.retrieve blows through the budget.
+    // Instead we surface `pending` and the client renders a "Bank setup
+    // coming soon" placeholder that will tap into the real Connect flow later.
+    // Once we're ready, flip this to `payouts_enabled && charges_enabled` via
+    // a cached `stripePayoutsEnabled` bool on the host doc (webhook-driven).
+    const bankVerified = false; // always pending in v1
+    const bankStatus = "coming_soon"; // client renders placeholder, not a warning
+
+    // Convenience for the profile screen — first onboarding photo, so the
+    // client can fall back to it when the user hasn't picked a distinct avatar.
+    const firstPhotoUrl =
+      Array.isArray(req.user.photos) && req.user.photos.length > 0 && req.user.photos[0]?.url
+        ? req.user.photos[0].url
+        : null;
+
+    return success(res, "OK", {
+      verification: { profile: profileVerified, bank: bankVerified, bankStatus },
+      pendingRequestCount,
+      earnings: computeEarnings(bookings, now),
+      revenueTrend: computeRevenueTrend(bookings, now),
+      performance: computePerformance(bookings, now),
+      performanceTrend: computePerformanceTrend(bookings, now),
+      availability: {
+        thisWeek: computeAvailabilityThisWeek(req.user.availability, now),
+      },
+      hostProfile: { firstPhotoUrl },
     });
   } catch (err) {
     next(err);

@@ -1,10 +1,15 @@
 import { View, Text } from "react-native";
+import { Check, CheckCheck } from "lucide-react-native";
 import { useThemeColors } from "@/hooks/useThemeColors";
+
+export type MessageDeliveryState = "sent" | "read";
 
 export type MessageBubbleProps = {
   text: string;
   timestamp: number;
   fromSelf: boolean;
+  /** Only rendered on self-sent bubbles. */
+  deliveryState?: MessageDeliveryState;
 };
 
 function time(ts: number): string {
@@ -12,8 +17,9 @@ function time(ts: number): string {
   return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
-/** One chat bubble — accent-tinted when sent by me, neutral when received. */
-export function MessageBubble({ text, timestamp, fromSelf }: MessageBubbleProps) {
+/** One chat bubble — accent-tinted when sent by me, neutral when received.
+ *  Self-sent bubbles show a single tick (sent) or double tick (read). */
+export function MessageBubble({ text, timestamp, fromSelf, deliveryState }: MessageBubbleProps) {
   const { palette, isDark } = useThemeColors();
 
   const bg = fromSelf ? palette.accent : isDark ? "#1a1a1a" : "#f4f4f5";
@@ -28,9 +34,16 @@ export function MessageBubble({ text, timestamp, fromSelf }: MessageBubbleProps)
           {text}
         </Text>
       </View>
-      <Text className="text-[10px] mt-0.5 mx-1" style={{ color: palette.textMuted }}>
-        {time(timestamp)}
-      </Text>
+      <View className="flex-row items-center gap-1 mt-0.5 mx-1">
+        <Text className="text-[10px]" style={{ color: palette.textMuted }}>
+          {time(timestamp)}
+        </Text>
+        {fromSelf && deliveryState === "read" ? (
+          <CheckCheck size={12} color={palette.accent} />
+        ) : fromSelf && deliveryState === "sent" ? (
+          <Check size={12} color={palette.textMuted} />
+        ) : null}
+      </View>
     </View>
   );
 }

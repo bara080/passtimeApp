@@ -1,19 +1,27 @@
 import { View, Text, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { Home, Heart, MessageSquare, MessageSquareMore, User, Search, type LucideIcon } from "lucide-react-native";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  Inbox,
+  MessageSquare,
+  MessageSquareMore,
+  User,
+  type LucideIcon,
+} from "lucide-react-native";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { useChats } from "@/context/ChatProvider";
 
+// 5 tabs, no floating search FAB (Figma 1288:12106).
 const TAB_META: Record<string, { label: string; Icon: LucideIcon }> = {
-  index: { label: "Home", Icon: Home },
-  likes: { label: "Likes", Icon: Heart },
+  dashboard: { label: "Dashboard", Icon: LayoutDashboard },
+  schedule: { label: "Schedule", Icon: CalendarDays },
+  requests: { label: "Requests", Icon: Inbox },
   messages: { label: "Messages", Icon: MessageSquare },
   profile: { label: "Profile", Icon: User },
 };
 
-// Detail / modal-like screens where the floating tab bar would cover critical UI
-// (input fields, primary action buttons). See openIssues.md #8.
 const HIDE_TAB_BAR_ON = new Set([
   "chat/[chatId]",
   "bookings/[bookingId]",
@@ -23,8 +31,8 @@ const HIDE_TAB_BAR_ON = new Set([
   "notifications",
 ]);
 
-/** Pill tab bar with orange active state + circular search FAB (Figma 1288:6397). */
-export function TabBar({ state, navigation }: BottomTabBarProps) {
+/** Host-specific tab bar: Dashboard · Schedule · Requests · Messages · Profile (no search FAB). */
+export function HostTabBar({ state, navigation }: BottomTabBarProps) {
   const { palette } = useThemeColors();
   const insets = useSafeAreaInsets();
   const visibleRoutes = state.routes.filter((r) => TAB_META[r.name]);
@@ -35,7 +43,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <View
-      className="absolute left-0 right-0 flex-row items-center px-4 gap-3"
+      className="absolute left-0 right-0 flex-row items-center px-4"
       style={{ bottom: Math.max(insets.bottom, 12) }}
     >
       <View
@@ -52,9 +60,6 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
           const { label, Icon } = TAB_META[route.name];
           const focused = state.routes[state.index].key === route.key;
           const hasUnread = route.name === "messages" && unreadCount > 0;
-          // Swap the outlined MessageSquare for the "has-dot" variant when
-          // there are unread messages — the icon itself signals state at a
-          // glance in addition to the red badge count.
           const RenderIcon = hasUnread && !focused ? MessageSquareMore : Icon;
           const iconColor = focused
             ? "#ffffff"
@@ -68,7 +73,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               accessibilityRole="tab"
               accessibilityState={{ selected: focused }}
               accessibilityLabel={hasUnread ? `${label}, ${unreadCount} unread` : label}
-              className={`items-center justify-center rounded-full px-4 py-1.5 ${focused ? "bg-[#ff6633]" : ""}`}
+              className={`items-center justify-center rounded-full px-3 py-1.5 ${focused ? "bg-[#ff6633]" : ""}`}
             >
               <View>
                 <RenderIcon size={20} color={iconColor} strokeWidth={hasUnread ? 2.5 : 2} />
@@ -85,10 +90,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               </View>
               <Text
                 className="text-[10px] mt-0.5"
-                style={{
-                  color: iconColor,
-                  fontWeight: hasUnread ? "700" : "400",
-                }}
+                style={{ color: iconColor, fontWeight: hasUnread ? "700" : "400" }}
               >
                 {label}
               </Text>
@@ -96,22 +98,6 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
           );
         })}
       </View>
-
-      <Pressable
-        onPress={() => navigation.navigate("explore")}
-        accessibilityRole="button"
-        accessibilityLabel="Search"
-        className="w-[52px] h-[52px] rounded-full items-center justify-center bg-white dark:bg-[#1a1a1a]"
-        style={{
-          shadowColor: "#000",
-          shadowOpacity: 0.12,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
-          elevation: 8,
-        }}
-      >
-        <Search size={22} color={palette.textPrimary} />
-      </Pressable>
     </View>
   );
 }

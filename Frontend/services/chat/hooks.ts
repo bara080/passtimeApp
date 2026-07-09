@@ -4,13 +4,18 @@ import { trackEvent, trackError } from "@/utils/analytics";
 
 const STALE_MS = 30 * 1000;
 
+/** Chat list + total unread count for the Messages tab badge. Polls every 5s
+ *  while the app is foregrounded so the badge "adds up" as new messages arrive
+ *  without the user having to open a chat. Only stops in background. */
 export function useChatList(enabled: boolean) {
   return useQuery({
     queryKey: ["chats", "list"],
     queryFn: chatsApi.list,
     enabled,
-    staleTime: STALE_MS,
+    staleTime: 0,
     refetchOnWindowFocus: true,
+    refetchInterval: enabled ? 5000 : false,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -23,7 +28,8 @@ export function useChatDetails(chatId: string | null) {
   });
 }
 
-/** Cold-start message history — the RTDB listener replaces this once mounted. */
+/** Cold-start message history only — the RTDB listener drives live updates
+ *  once the screen mounts. staleTime keeps the query quiet in the background. */
 export function useChatHistory(chatId: string | null) {
   return useQuery({
     queryKey: ["chats", "history", chatId],

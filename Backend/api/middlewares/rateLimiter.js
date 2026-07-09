@@ -71,7 +71,8 @@ exports.sendMessageLimiter = rateLimit({
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `${req.ip}:${req.user?.uid || "anon"}`,
+  // ipKeyGenerator normalizes IPv6 to /64 so users can't rotate through their subnet.
+  keyGenerator: (req) => `${ipKeyGenerator(req.ip)}:${req.user?.uid || "anon"}`,
   message: { status: 1, message: "You are messaging too fast. Slow down.", data: null },
 });
 

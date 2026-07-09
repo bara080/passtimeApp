@@ -48,6 +48,8 @@ export type UpdateProfilePayload = {
   lastName?: string;
   /** ISO date string, e.g. "1995-06-15" */
   dateOfBirth?: string;
+  /** Public https URL from the media pipeline. Null clears the avatar. */
+  avatarUrl?: string | null;
 };
 
 export type SocialLoginPayload = {

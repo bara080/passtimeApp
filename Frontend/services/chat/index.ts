@@ -1,5 +1,5 @@
 import { axiosInstance } from "@/utils/httpClient";
-import type { Chat, ChatListResponse, ChatSendResponse, Message } from "./types";
+import type { Chat, ChatListResponse, ChatSendResponse, ChatDetailsResponse, Message } from "./types";
 
 function unwrap<T>(res: { data: { status: number; message: string; data: T } }): T {
   if (res.data.status !== 0) throw new Error(res.data.message || "Request failed");
@@ -10,7 +10,7 @@ export const chatsApi = {
   list: async (): Promise<ChatListResponse> => unwrap<ChatListResponse>(await axiosInstance.get("/chats")),
   create: async (bookingId: string): Promise<{ chat: Chat }> =>
     unwrap(await axiosInstance.post("/chats", { bookingId })),
-  details: async (chatId: string): Promise<{ chat: Chat; viewerRole: "member" | "host" }> =>
+  details: async (chatId: string): Promise<ChatDetailsResponse> =>
     unwrap(await axiosInstance.get(`/chats/${chatId}`)),
   send: async (chatId: string, text: string): Promise<ChatSendResponse> =>
     unwrap<ChatSendResponse>(await axiosInstance.post(`/chats/${chatId}/message`, { text })),

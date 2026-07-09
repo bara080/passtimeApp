@@ -169,6 +169,12 @@ exports.loginUser = async (req, res, next) => {
         avatarUrl: user.avatarUrl,
         emailVerified: user.emailVerified,
         phoneVerified: user.phoneVerified,
+        ...(user.role === "host"
+          ? {
+              hostOnboardingStep: user.hostOnboardingStep ?? null,
+              hostOnboardingComplete: Boolean(user.hostOnboardingComplete),
+            }
+          : {}),
       },
     });
   } catch (err) {
@@ -488,6 +494,12 @@ exports.socialLogin = async (req, res, next) => {
         emailVerified: user.emailVerified,
         phoneVerified: user.phoneVerified,
         phoneNumber: user.phoneNumber,
+        ...(user.role === "host"
+          ? {
+              hostOnboardingStep: user.hostOnboardingStep ?? null,
+              hostOnboardingComplete: Boolean(user.hostOnboardingComplete),
+            }
+          : {}),
       },
     });
   } catch (err) {
@@ -527,7 +539,7 @@ exports.getMe = async (req, res, next) => {
 // ── Update Me ─────────────────────────────────────────────────────────────────
 exports.updateMe = async (req, res, next) => {
   try {
-    const { firstName, lastName, dateOfBirth } = req.body;
+    const { firstName, lastName, dateOfBirth, avatarUrl } = req.body;
     const updates = {};
 
     if (firstName !== undefined) {
@@ -545,8 +557,17 @@ exports.updateMe = async (req, res, next) => {
       if (dobError) return error(res, 400, dobError);
       updates.dateOfBirth = date;
     }
+    if (avatarUrl !== undefined) {
+      if (avatarUrl === null || avatarUrl === "") {
+        updates.avatarUrl = null;
+      } else if (typeof avatarUrl === "string" && avatarUrl.length <= 2048 && /^https?:\/\//i.test(avatarUrl)) {
+        updates.avatarUrl = avatarUrl;
+      } else {
+        return error(res, 400, "avatarUrl must be an https URL under 2048 chars.");
+      }
+    }
     if (Object.keys(updates).length === 0) {
-      return error(res, 400, "Nothing to update. Allowed fields: firstName, lastName, dateOfBirth.");
+      return error(res, 400, "Nothing to update. Allowed fields: firstName, lastName, dateOfBirth, avatarUrl.");
     }
     if (updates.firstName || updates.lastName) {
       const first = updates.firstName ?? req.user.firstName ?? "";

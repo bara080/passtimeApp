@@ -129,7 +129,30 @@ exports.getChat = async (req, res, next) => {
     const chat = await Conversation.findOne({ chatId: req.params.chatId });
     const gate = assertChatParticipant(chat, req.user.uid);
     if (!gate.ok) return error(res, gate.status, gate.message);
-    return success(res, "OK", { chat: chat.toObject(), viewerRole: gate.role });
+
+    // Fresh counterparty profiles — booking-time snapshots go stale when a
+    // user renames themselves post-booking (chat.md §5b, openIssues.md #8).
+    const { getUserModel } = require("../config/db");
+    const [member, host] = await Promise.all([
+      getUserModel("member").findOne({ uid: chat.memberUid }).select("uid displayName firstName lastName avatarUrl professionalRole").lean(),
+      getUserModel("host").findOne({ uid: chat.hostUid }).select("uid displayName firstName lastName avatarUrl professionalRole").lean(),
+    ]);
+    const profile = (u) =>
+      u
+        ? {
+            uid: u.uid,
+            displayName: u.displayName || `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || null,
+            avatarUrl: u.avatarUrl || null,
+            professionalRole: u.professionalRole || null,
+          }
+        : null;
+
+    return success(res, "OK", {
+      chat: chat.toObject(),
+      viewerRole: gate.role,
+      memberProfile: profile(member),
+      hostProfile: profile(host),
+    });
   } catch (err) {
     next(err);
   }
@@ -188,6 +211,10 @@ exports.sendMessage = async (req, res, next) => {
     await chat.save();
 
     // Notify the other party (chat.md §5, closes Zinga's 'no push on message' gap).
+    // channel: "push" ONLY — chat messages live in the Messages tab, not the
+    // notifications feed. Prevents the notifications inbox from filling up
+    // with every single message; the unread badge on Messages already conveys
+    // count. Booking events (accept/decline/cancel/etc.) still write to both.
     const otherUid = gate.role === "member" ? chat.hostUid : chat.memberUid;
     const otherRole = gate.role === "member" ? "host" : "member";
     fireNotify({
@@ -198,6 +225,7 @@ exports.sendMessage = async (req, res, next) => {
       type: "chat_message",
       data: { chatId: chat.chatId, bookingId: chat.bookingId },
       actorUid: req.user.uid,
+      channel: "push",
     });
 
     return success(res, "OK", { chat: chat.toObject(), messageId });
