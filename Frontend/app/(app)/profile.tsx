@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView, Linking } from "react-native";
+import { View, Text, ScrollView, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -51,7 +51,7 @@ function HostProfileScreen() {
   const router = useRouter();
   const toast = useToast();
   const { user, signOut, updateUser } = useAuth();
-  const { palette, isDark } = useThemeColors();
+  const { palette } = useThemeColors();
   const dashboard = useHostDashboard(Boolean(user && user.role === "host"));
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -188,18 +188,13 @@ function HostProfileScreen() {
 
         <HostProfilePreferences country="United States" currency="USD" />
 
+        <ProfileSection title="Account">
+          <ProfileRow Icon={LogOut} label="Sign Out" destructive onPress={signOut} />
+        </ProfileSection>
+
         <Text className="text-[11px] text-center mb-6" style={{ color: palette.textMuted }}>
           Version {APP_VERSION}
         </Text>
-
-        <Pressable
-          onPress={signOut}
-          className="h-[52px] rounded-[10px] border flex-row items-center justify-center gap-2"
-          style={{ borderColor: palette.border, backgroundColor: isDark ? palette.surface : "#ffffff" }}
-        >
-          <LogOut size={20} color={palette.textMuted} />
-          <Text className="text-base font-medium" style={{ color: palette.textSecondary }}>Sign Out</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -217,7 +212,7 @@ function MemberProfileScreen() {
   const router = useRouter();
   const toast = useToast();
   const { user, signOut, updateUser } = useAuth();
-  const { palette, isDark } = useThemeColors();
+  const { palette } = useThemeColors();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const upcoming = useMyBookings("upcoming");
@@ -345,18 +340,13 @@ function MemberProfileScreen() {
 
         <HostProfilePreferences country="United States" currency="USD" />
 
+        <ProfileSection title="Account">
+          <ProfileRow Icon={LogOut} label="Sign Out" destructive onPress={signOut} />
+        </ProfileSection>
+
         <Text className="text-[11px] text-center mb-6" style={{ color: palette.textMuted }}>
           Version {APP_VERSION}
         </Text>
-
-        <Pressable
-          onPress={signOut}
-          className="h-[52px] rounded-[10px] border flex-row items-center justify-center gap-2"
-          style={{ borderColor: palette.border, backgroundColor: isDark ? palette.surface : "#ffffff" }}
-        >
-          <LogOut size={20} color={palette.textMuted} />
-          <Text className="text-base font-medium" style={{ color: palette.textSecondary }}>Sign Out</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
