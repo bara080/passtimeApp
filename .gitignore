@@ -63,3 +63,13 @@ Frontend/ios/Passtime/GoogleService-Info.plist
 
 # API collection — local only (contains test tokens/URLs)
 passtime-api.postman_collection.json
+
+# IDEs
+.idea/
+.vscode/
+
+# Local-only test assets
+testAssests/
+
+# Expo Router / EAS Update export output (regenerated on every `eas update`)
+Frontend/dist/
