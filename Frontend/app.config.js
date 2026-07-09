@@ -6,6 +6,10 @@ module.exports = {
     orientation: "portrait",
     icon: "./assets/app-icon.png",
     scheme: "passtime",
+    runtimeVersion: "1.0.0",
+    updates: {
+      url: "https://u.expo.dev/0672d58c-18b5-4f30-8bc9-98fe8d2b9b23",
+    },
     userInterfaceStyle: "automatic",
     // TODO: re-enable once react-native-svg fully supports New Architecture on Android (topSvgLayout error)
     newArchEnabled: false,

@@ -38,6 +38,22 @@ export const mediaApi = {
     const { url } = await mediaApi.confirmUpload(path);
     return url;
   },
+
+  /** Same pipeline as uploadImage but returns both the storage path and URL
+   *  (host photo records persist the pair for ownership verification). */
+  uploadImageWithPath: async (kind: MediaKind, localUri: string): Promise<{ path: string; url: string }> => {
+    const contentType = guessContentType(localUri);
+    const { uploadUrl, path } = await mediaApi.createUploadUrl(kind, contentType);
+    const blob = await (await fetch(localUri)).blob();
+    const put = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body: blob,
+    });
+    if (!put.ok) throw new Error("Image upload failed. Please try again.");
+    const { url } = await mediaApi.confirmUpload(path);
+    return { path, url };
+  },
 };
 
 function guessContentType(uri: string): string {

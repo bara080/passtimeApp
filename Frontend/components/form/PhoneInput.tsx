@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { ChevronDown } from "lucide-react-native";
 import { POPULAR_CALLING_CODES, getMaxDigitsForCountry, type CountryCode } from "@/utils/phone";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 type Props = {
   value: string;
@@ -33,21 +34,28 @@ export default function PhoneInput({
 }: Props) {
   const [showPicker, setShowPicker] = useState(false);
   const maxLength = getMaxDigitsForCountry(selectedCountry);
+  const { palette } = useThemeColors();
+  const themed = {
+    container: { borderColor: palette.border, backgroundColor: palette.surface },
+    text: { color: palette.textPrimary },
+    divider: { backgroundColor: palette.border },
+    sheet: { backgroundColor: palette.surface },
+  };
 
   return (
     <View>
-      <View style={[styles.container, error ? styles.containerError : null]}>
+      <View style={[styles.container, themed.container, error ? styles.containerError : null]}>
         <TouchableOpacity style={styles.codeButton} onPress={() => setShowPicker(true)}>
-          <Text style={styles.codeText}>+{callingCode}</Text>
-          <ChevronDown size={14} color="#666" />
+          <Text style={[styles.codeText, themed.text]}>+{callingCode}</Text>
+          <ChevronDown size={14} color={palette.textMuted} />
         </TouchableOpacity>
-        <View style={styles.divider} />
+        <View style={[styles.divider, themed.divider]} />
         <TextInput
-          style={styles.input}
+          style={[styles.input, themed.text]}
           value={value}
           onChangeText={(t) => onChangeText(t.replace(/\D/g, ""))}
           placeholder={placeholder}
-          placeholderTextColor="#b0b0b0"
+          placeholderTextColor={palette.placeholder}
           keyboardType="phone-pad"
           maxLength={maxLength}
           autoComplete="tel-national"
@@ -62,8 +70,8 @@ export default function PhoneInput({
           onPress={() => setShowPicker(false)}
           activeOpacity={1}
         >
-          <View style={styles.pickerSheet}>
-            <Text style={styles.pickerTitle}>Select country code</Text>
+          <View style={[styles.pickerSheet, themed.sheet]}>
+            <Text style={[styles.pickerTitle, themed.text]}>Select country code</Text>
             <FlatList
               data={POPULAR_CALLING_CODES}
               keyExtractor={(item) => `${item.country}-${item.code}`}
@@ -75,7 +83,7 @@ export default function PhoneInput({
                     setShowPicker(false);
                   }}
                 >
-                  <Text style={styles.pickerItemText}>{item.label}</Text>
+                  <Text style={[styles.pickerItemText, themed.text]}>{item.label}</Text>
                 </TouchableOpacity>
               )}
             />

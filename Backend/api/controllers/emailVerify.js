@@ -63,15 +63,19 @@ exports.sendVerificationEmail = async (req, res, next) => {
     if (!email) return error(res, 400, "email is required.");
 
     const result = await findRoleByEmail(email.toLowerCase().trim());
-    if (!result) return error(res, 404, "No account found for this email.");
-
-    await deliverVerificationEmail({
-      email: email.toLowerCase().trim(),
-      displayName: displayName || result.user.displayName,
-      role: result.role,
-    });
-
-    return success(res, "Verification email sent.");
+    if (result) {
+      try {
+        await deliverVerificationEmail({
+          email: email.toLowerCase().trim(),
+          displayName: displayName || result.user.displayName,
+          role: result.role,
+        });
+      } catch (emailErr) {
+        console.error("[send-verify-email] delivery failed:", emailErr.message);
+      }
+    }
+    // Always the same response — do not leak whether an account exists (enumeration).
+    return success(res, "If an account exists, a verification code has been sent.");
   } catch (err) {
     next(err);
   }

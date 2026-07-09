@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const helmet = require("helmet");
 const cors = require("cors");
 const Sentry = require("@sentry/node");
 const { connectDB, setMongoReadyCallback } = require("./config/db");
@@ -9,6 +10,7 @@ const errorHandler = require("./middlewares/errorHandler");
 const authRoutes = require("./routes/authRoutes");
 const stripeRoutes = require("./routes/stripeRoutes");
 const mediaRoutes = require("./routes/mediaRoutes");
+const hostRoutes = require("./routes/hostRoutes");
 
 const app = express();
 
@@ -38,16 +40,21 @@ const infraReadyPromise = (async () => {
 // ── Stripe webhook (raw body — MUST be before express.json()) ───────────────
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
 
+// ── Security headers ────────────────────────────────────────────────────────
+app.use(helmet({ contentSecurityPolicy: false })); // JSON API, no HTML
+
 // ── CORS ────────────────────────────────────────────────────────────────────
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "").split(",").map((o) => o.trim()).filter(Boolean);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS blocked: ${origin}`));
-      }
+      // No origin header = same-origin, curl, or mobile app — always allow
+      if (!origin) return callback(null, true);
+      // In prod, an empty allowlist means "deny all cross-origin" (fail closed)
+      const isProd = process.env.NODE_ENV === "production";
+      if (allowedOrigins.length === 0) return callback(isProd ? new Error("CORS: no allowlist configured") : null, !isProd);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error(`CORS blocked: ${origin}`));
     },
     credentials: true,
   })
@@ -62,7 +69,9 @@ app.use((req, res, next) => {
   req._startedAt = Date.now();
   res.on("finish", () => {
     const ms = Date.now() - req._startedAt;
-    console.log(`[${req.method}] ${req.originalUrl} → ${res.statusCode} (${ms}ms)`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[${req.method}] ${req.originalUrl} → ${res.statusCode} (${ms}ms)`);
+    }
   });
   next();
 });
@@ -112,6 +121,7 @@ app.use(async (req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/stripe", stripeRoutes);
 app.use("/api/media", mediaRoutes);
+app.use("/api/host", hostRoutes);
 
 // ── Sentry error handler ─────────────────────────────────────────────────────
 Sentry.setupExpressErrorHandler(app);

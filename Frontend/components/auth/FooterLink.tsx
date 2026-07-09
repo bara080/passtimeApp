@@ -12,7 +12,7 @@ export type FooterLinkProps = {
 export function FooterLink({ prompt, action, onPress }: FooterLinkProps) {
   return (
     <Pressable onPress={onPress} className="items-center mt-6" accessibilityRole="link">
-      <Text className="text-base text-black">
+      <Text className="text-base text-black dark:text-white">
         {prompt} <Text className="text-[#ff6633] underline">{action}</Text>
       </Text>
     </Pressable>

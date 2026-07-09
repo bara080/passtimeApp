@@ -1,4 +1,5 @@
 import { View, Text, Pressable } from "react-native";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,13 +19,14 @@ const LOGO_MARK_SVG = `<svg width="97.333" height="65.7983" viewBox="0 0 97.333 
 </svg>`;
 
 export default function LandingScreen() {
+  const { palette, isDark } = useThemeColors();
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-[#0d0d0d]">
       {/* Logo — centered in upper portion */}
       <View className="flex-1 items-center justify-center">
         <SvgXml xml={LOGO_MARK_SVG} width={100} height={68} />
         <View className="flex-row mt-3">
-          <Text style={{ fontSize: 42, fontWeight: "700", color: "#1a1a1a", lineHeight: 50 }}>Pass</Text>
+          <Text style={{ fontSize: 42, fontWeight: "700", color: palette.textPrimary, lineHeight: 50 }}>Pass</Text>
           <Text style={{ fontSize: 42, fontWeight: "400", color: "#71aa00", lineHeight: 50 }}>time</Text>
         </View>
       </View>
@@ -37,7 +39,7 @@ export default function LandingScreen() {
           Ready to Get Started?
         </Text>
         <Text
-          style={{ fontSize: 16, color: "#1a1a1a", textAlign: "center", marginBottom: 32, lineHeight: 22 }}
+          style={{ fontSize: 16, color: palette.textPrimary, textAlign: "center", marginBottom: 32, lineHeight: 22 }}
         >
           Create your profile in minutes and experience a more structured way to connect.
         </Text>
@@ -78,23 +80,23 @@ export default function LandingScreen() {
           onPress={() => router.push("/(app)")}
           style={{
             height: 52,
-            backgroundColor: "#1a1a1a",
+            backgroundColor: palette.contrast,
             borderRadius: 8,
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 28,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "600", color: "#fff" }}>Guest tour</Text>
+          <Text style={{ fontSize: 18, fontWeight: "600", color: palette.contrastText }}>Guest tour</Text>
         </Pressable>
 
         {/* Terms */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontSize: 16, color: "#1a1a1a" }}>Terms of use</Text>
+          <Text style={{ fontSize: 16, color: palette.textPrimary }}>Terms of use</Text>
           <View
-            style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: "#1a1a1a", marginHorizontal: 6 }}
+            style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: palette.textPrimary, marginHorizontal: 6 }}
           />
-          <Text style={{ fontSize: 16, color: "#1a1a1a" }}>Privacy policy</Text>
+          <Text style={{ fontSize: 16, color: palette.textPrimary }}>Privacy policy</Text>
         </View>
       </View>
     </SafeAreaView>

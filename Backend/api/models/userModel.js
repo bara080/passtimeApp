@@ -16,9 +16,38 @@ const userSchema = new mongoose.Schema(
     phoneVerified: { type: Boolean, default: false },
     isSocialLogin: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    deletedAt: { type: Date, default: null },
     // Host-specific
     services: [{ type: String }],
     bio: { type: String },
+    experienceTypes: [{ type: String }],
+    hourlyRate: { type: Number }, // cents
+    currency: { type: String, default: "usd" },
+    location: {
+      country: { type: String, trim: true },
+      state: { type: String, trim: true },
+      city: { type: String, trim: true },
+      address: { type: String, trim: true },
+    },
+    professionalRole: { type: String, trim: true },
+    photos: [{ path: String, url: String }],
+    availability: {
+      weekly: [
+        {
+          day: { type: Number, min: 0, max: 6 },
+          enabled: { type: Boolean, default: false },
+          ranges: [{ start: String, end: String }],
+        },
+      ],
+      blockedDates: [{ type: String }],
+      bookingConfig: {
+        minMinutes: { type: Number },
+        maxMinutes: { type: Number },
+        bufferMinutes: { type: Number },
+      },
+    },
+    hostOnboardingStep: { type: String, default: null },
+    hostOnboardingComplete: { type: Boolean, default: false },
     // Push notifications
     pushToken: { type: String },
   },

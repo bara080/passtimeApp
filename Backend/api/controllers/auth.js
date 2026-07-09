@@ -23,6 +23,11 @@ const RESET_OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const RESET_TOKEN_TTL_SECONDS = 15 * 60;     // 15 minutes
 const MAX_RESET_ATTEMPTS = 5;
 
+// Precomputed dummy hash to normalize login timing when the account is missing.
+// Prevents user-enumeration via response-time delta. Value is a valid bcrypt hash
+// of an inert secret; it must never match a real password.
+const DUMMY_BCRYPT_HASH = "$2b$12$Lz4h/Gk3RXeoLZ5Q4Rl2eOxKk8XmYQ2LmYm4z3VqM5jL8Kx0jZlgS";
+
 // ── Register ─────────────────────────────────────────────────────────────────
 exports.registerUser = async (req, res, next) => {
   try {
@@ -119,11 +124,19 @@ exports.loginUser = async (req, res, next) => {
 
     const UserModel = getUserModel(role);
     const user = await UserModel.findOne({ email: email.toLowerCase().trim() });
-    if (!user) return error(res, 401, "Invalid email or password.");
+
+    // Timing normalization: run bcrypt even when the user doesn't exist so response
+    // duration doesn't leak account existence.
+    if (!user) {
+      await bcrypt.compare(password, DUMMY_BCRYPT_HASH);
+      return error(res, 401, "Invalid email or password.");
+    }
     if (!user.isActive) return error(res, 403, "Account is deactivated.");
 
     if (user.isSocialLogin || !user.password) {
-      return error(res, 400, "Please use social login for this account.");
+      // Same 401 shape as wrong password — do not disclose the account type.
+      await bcrypt.compare(password, DUMMY_BCRYPT_HASH);
+      return error(res, 401, "Invalid email or password.");
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -392,7 +405,7 @@ exports.socialLogin = async (req, res, next) => {
         // Legacy path: Firebase ID token from client-side signInWithCredential
         decoded = await admin.auth().verifyIdToken(idToken);
       }
-      console.log("[social] token verified — uid:", decoded.uid, "| email:", decoded.email, "| email_verified:", decoded.email_verified);
+      if (process.env.NODE_ENV !== "production") console.log("[social] token verified — uid:", decoded.uid, "| email:", decoded.email, "| email_verified:", decoded.email_verified);
     } catch (e) {
       console.error("[social] token verification FAILED —", e.code || "", e.message);
       return error(res, 401, "Invalid or expired social credential.");
@@ -403,8 +416,28 @@ exports.socialLogin = async (req, res, next) => {
 
     const UserModel = getUserModel(role);
     let user = await UserModel.findOne({ email });
-    console.log("[social] existing user:", user ? `yes (uid ${user.uid}, social=${user.isSocialLogin})` : "no — creating");
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[social] existing user:", user ? `yes (uid ${user.uid}, social=${user.isSocialLogin})` : "no — creating");
+    }
     if (user && !user.isActive) return error(res, 403, "Account is deactivated.");
+
+    // Account linking: an existing email/password account may be logged into via
+    // social when the PROVIDER asserts the email is verified (Google/Apple do) —
+    // that assertion is proof of email ownership.
+    if (user && !user.isSocialLogin && user.password) {
+      if (!decoded.email_verified) {
+        return error(res, 409, "An account with this email exists. Please log in with your password.");
+      }
+      // Pre-hijack mitigation: if the password account never verified its email,
+      // whoever set that password may not own the address. The provider-verified
+      // owner is here now — revoke the unproven password (they can reset it).
+      if (!user.emailVerified) {
+        await UserModel.updateOne({ uid: user.uid }, { password: null, emailVerified: true });
+        user.password = null;
+        user.emailVerified = true;
+      }
+      // Verified accounts keep their password — both login methods work.
+    }
 
     if (!user) {
       const fullName = (decoded.name || "").trim();
@@ -479,6 +512,12 @@ exports.getMe = async (req, res, next) => {
       phoneVerified: user.phoneVerified,
       phoneNumber: user.phoneNumber,
       dateOfBirth: user.dateOfBirth,
+      ...(req.userRole === "host"
+        ? {
+            hostOnboardingStep: user.hostOnboardingStep ?? null,
+            hostOnboardingComplete: Boolean(user.hostOnboardingComplete),
+          }
+        : {}),
     });
   } catch (err) {
     next(err);
@@ -532,6 +571,50 @@ exports.updateMe = async (req, res, next) => {
       phoneNumber: user.phoneNumber,
       dateOfBirth: user.dateOfBirth,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+// ── Delete Me (self-serve account deletion for App Review 5.1.1(v) & GDPR) ────
+exports.deleteMe = async (req, res, next) => {
+  try {
+    const uid = req.user.uid;
+    const role = req.userRole;
+    const UserModel = getUserModel(role);
+
+    // Soft delete: preserve rows referenced by payments/audit; scrub PII.
+    const tombstoneEmail = `deleted-${uid}@passtime.internal`;
+    await UserModel.updateOne(
+      { uid },
+      {
+        isActive: false,
+        deletedAt: new Date(),
+        email: tombstoneEmail,
+        password: null,
+        firstName: "",
+        lastName: "",
+        displayName: "",
+        avatarUrl: null,
+        phoneNumber: null,
+        dateOfBirth: null,
+        bio: null,
+        services: [],
+        pushToken: null,
+        isSocialLogin: false,
+      }
+    );
+
+    // Revoke every active session + refresh token immediately.
+    await deleteAllUserSessions(uid);
+    const RefreshModel = req.user.db.model("RefreshToken");
+    await RefreshModel.updateMany({ uid, revoked: false }, { revoked: true });
+
+    // Best-effort Firebase cleanup — never block the deletion on it.
+    try { await admin.auth().deleteUser(uid); } catch { /* not present or not permitted */ }
+
+    return success(res, "Account deleted.", { deleted: true });
   } catch (err) {
     next(err);
   }

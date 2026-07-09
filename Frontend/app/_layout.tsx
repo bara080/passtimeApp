@@ -1,6 +1,11 @@
 import "../global.css";
 import { useEffect } from "react";
+import { useColorScheme } from "react-native";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { ThemeProvider, DarkTheme, DefaultTheme } from "@react-navigation/native";
+import { colors, darkColors } from "@/constants/theme";
+import { applySavedThemePreference } from "@/utils/themePreference";
 import { isRunningInExpoGo } from "expo";
 import * as SplashScreen from "expo-splash-screen";
 import * as Sentry from "@sentry/react-native";
@@ -40,22 +45,33 @@ SplashScreen.preventAutoHideAsync();
 
 const STRIPE_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
+// Navigator theme keeps transition backgrounds in sync with the app palette
+// (prevents white flashes between dark screens).
+const navLight = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.background, primary: colors.accent } };
+const navDark = { ...DarkTheme, colors: { ...DarkTheme.colors, background: darkColors.background, primary: darkColors.accent } };
+
 function RootLayout() {
+  const scheme = useColorScheme();
+
   useEffect(() => {
+    applySavedThemePreference();
     console.log("[Splash] hiding splash screen");
     SplashScreen.hideAsync();
   }, []);
 
   return (
-    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY} merchantIdentifier="merchant.com.passtime.app">
-      <QueryProvider>
-        <ToastProvider>
-          <SessionProvider>
-            <Stack screenOptions={{ headerShown: false }} />
-          </SessionProvider>
-        </ToastProvider>
-      </QueryProvider>
-    </StripeProvider>
+    <ThemeProvider value={scheme === "dark" ? navDark : navLight}>
+      <StatusBar style="auto" />
+      <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY} merchantIdentifier="merchant.com.passtime.app">
+        <QueryProvider>
+          <ToastProvider>
+            <SessionProvider>
+              <Stack screenOptions={{ headerShown: false }} />
+            </SessionProvider>
+          </ToastProvider>
+        </QueryProvider>
+      </StripeProvider>
+    </ThemeProvider>
   );
 }
 

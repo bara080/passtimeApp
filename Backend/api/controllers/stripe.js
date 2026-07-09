@@ -77,6 +77,10 @@ exports.getConnectAccountStatus = async (req, res, next) => {
     const { accountId } = req.params;
     if (!accountId) return error(res, 400, "accountId is required.");
 
+    // Ownership: only the authenticated host who owns this account can query it.
+    if (req.userRole !== "host") return error(res, 403, "Not authorized.");
+    if (req.user.stripeAccountId !== accountId) return error(res, 403, "Not authorized.");
+
     const account = await stripe.accounts.retrieve(accountId);
 
     const payoutReady =
@@ -110,6 +114,20 @@ exports.createPaymentIntent = async (req, res, next) => {
     if (!hostUid || !amount) return error(res, 400, "hostUid and amount are required.");
     if (typeof amount !== "number" || amount < 50) {
       return error(res, 400, "amount must be a number ≥ 50 (cents).");
+    }
+    // INTERIM guard: cap amount at $5,000 until Bookings model + server-side
+    // pricing lands. See securityAudit.md H-4 — the client MUST NOT set price.
+    const MAX_AMOUNT_CENTS = 500_000;
+    if (amount > MAX_AMOUNT_CENTS) {
+      return error(res, 400, "amount exceeds the transaction limit.");
+    }
+    // Sanity: bookingId must be a plausible id, currency must be an allowlisted 3-letter code.
+    const ALLOWED_CURRENCIES = ["usd"];
+    if (!ALLOWED_CURRENCIES.includes(String(currency).toLowerCase())) {
+      return error(res, 400, "Unsupported currency.");
+    }
+    if (bookingId && !/^[a-zA-Z0-9_-]{1,64}$/.test(String(bookingId))) {
+      return error(res, 400, "Invalid bookingId.");
     }
 
     const HostModel = getUserModel("host");

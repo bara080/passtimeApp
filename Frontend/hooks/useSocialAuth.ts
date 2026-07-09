@@ -64,9 +64,11 @@ export function useSocialAuth(role: UserRole) {
    */
   const exchange = async (provider: SocialProvider, idToken: string) => {
     console.log(`[SocialAuth] exchanging ${provider} token with backend (len: ${idToken.length})`);
-    const ok = await socialLogin({ provider, idToken, role });
-    console.log("[SocialAuth] backend exchange result:", ok);
-    if (!ok) toast.error("Login failed", "Could not sign you in. Please try again.");
+    const result = await socialLogin({ provider, idToken, role });
+    console.log("[SocialAuth] backend exchange result:", result.ok);
+    if (!result.ok) {
+      toast.error("Login failed", result.message ?? "Could not sign you in. Please try again.");
+    }
   };
 
   /**

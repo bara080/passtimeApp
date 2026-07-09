@@ -1,6 +1,7 @@
 import { View, Text, Pressable, Alert, ActivityIndicator, Platform } from "react-native";
 import { SvgXml } from "react-native-svg";
-import { GOOGLE_LOGO_SVG, APPLE_LOGO_SVG } from "./socialLogos";
+import { googleLogoSvg, appleLogoSvg } from "./socialLogos";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 export type SocialAuthRowProps = {
   /** Verb shown in the divider text, e.g. "Sign up" or "Login". */
@@ -16,14 +17,15 @@ export type SocialAuthRowProps = {
 export function SocialAuthRow({ context = "Sign up", onGoogle, onApple, pending = null }: SocialAuthRowProps) {
   const notAvailable = () => Alert.alert("Coming soon", "Social login is not available yet.");
   const showApple = Platform.OS === "ios";
+  const { palette } = useThemeColors();
 
   return (
     <View className="items-center mt-6">
-      <Text className="text-base text-[#1a1a1a] mb-4">Or {context} using with...</Text>
+      <Text className="text-base text-[#1a1a1a] dark:text-white mb-4">Or {context} using with...</Text>
       <View className="flex-row gap-[10px]">
         <SocialButton
           label="Google"
-          svg={GOOGLE_LOGO_SVG}
+          svg={googleLogoSvg(palette.contrastText)}
           onPress={onGoogle ?? notAvailable}
           busy={pending === "google"}
           disabled={pending !== null}
@@ -31,7 +33,7 @@ export function SocialAuthRow({ context = "Sign up", onGoogle, onApple, pending 
         {showApple ? (
           <SocialButton
             label="Apple"
-            svg={APPLE_LOGO_SVG}
+            svg={appleLogoSvg(palette.contrastText)}
             onPress={onApple ?? notAvailable}
             busy={pending === "apple"}
             disabled={pending !== null}
@@ -55,21 +57,23 @@ function SocialButton({
   busy?: boolean;
   disabled?: boolean;
 }) {
+  const { palette } = useThemeColors();
+  const spinnerColor = palette.contrastText;
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className="h-[52px] flex-1 max-w-[170px] bg-[#1a1a1a] rounded-[8px] flex-row items-center justify-center gap-3"
+      className="h-[52px] flex-1 max-w-[170px] bg-[#1a1a1a] dark:bg-[#f4f4f5] rounded-[8px] flex-row items-center justify-center gap-3"
       style={{ opacity: disabled && !busy ? 0.6 : 1 }}
       accessibilityRole="button"
       accessibilityLabel={`Continue with ${label}`}
     >
       {busy ? (
-        <ActivityIndicator color="#fff" />
+        <ActivityIndicator color={spinnerColor} />
       ) : (
         <>
           <SvgXml xml={svg} width={24} height={24} />
-          <Text className="text-white text-base">{label}</Text>
+          <Text className="text-white dark:text-[#1a1a1a] text-base">{label}</Text>
         </>
       )}
     </Pressable>

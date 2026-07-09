@@ -12,6 +12,8 @@ export type AuthUser = {
   phoneVerified: boolean;
   phoneNumber?: string;
   dateOfBirth?: string;
+  hostOnboardingStep?: string | null;
+  hostOnboardingComplete?: boolean;
 };
 
 export type LoginPayload = {

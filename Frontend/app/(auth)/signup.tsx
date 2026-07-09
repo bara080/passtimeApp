@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, Pressable, Image } from "react-native";
 import { router } from "expo-router";
 import { AuthScreen, AuthTitle, GradientButton } from "@/components/auth";
-import { colors } from "@/constants/theme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import type { UserRole } from "@/services/auth/types";
 
 const ROLES: { role: UserRole; title: string; description: string; image: number }[] = [
@@ -22,6 +22,7 @@ const ROLES: { role: UserRole; title: string; description: string; image: number
 
 export default function SignupScreen() {
   const [selected, setSelected] = useState<UserRole>("member");
+  const { palette, isDark } = useThemeColors();
 
   return (
     <AuthScreen scroll={false}>
@@ -41,14 +42,14 @@ export default function SignupScreen() {
               accessibilityState={{ selected: isSelected }}
               className="flex-row items-center rounded-[12px] border p-4 gap-4"
               style={{
-                borderColor: isSelected ? colors.accent : colors.border,
-                backgroundColor: isSelected ? "#fff3ec" : "#ffffff",
+                borderColor: isSelected ? palette.accent : palette.border,
+                backgroundColor: isSelected ? (isDark ? "#33200f" : "#fff3ec") : palette.surface,
               }}
             >
               <Image source={image} style={{ width: 72, height: 72 }} resizeMode="contain" />
               <View className="flex-1">
-                <Text className="text-[20px] text-[#1a1a1a] mb-1">{title}</Text>
-                <Text className="text-sm text-[#444] leading-[19px]">{description}</Text>
+                <Text className="text-[20px] text-[#1a1a1a] dark:text-white mb-1">{title}</Text>
+                <Text className="text-sm text-[#444] dark:text-[#d4d4d4] leading-[19px]">{description}</Text>
               </View>
             </Pressable>
           );

@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { CheckCircle, AlertCircle, Info, X } from "lucide-react-native";
 import { colors } from "@/constants/theme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import type { ToastData } from "@/context/ToastProvider";
 
 const TYPE_STYLES = {
@@ -17,12 +18,13 @@ export type ToastViewProps = {
 /** Presentational toast card: tinted icon, title, optional message, dismiss. */
 export function ToastView({ toast, onDismiss }: ToastViewProps) {
   const { icon: Icon, tint } = TYPE_STYLES[toast.type];
+  const { palette } = useThemeColors();
 
   return (
     <Pressable
       onPress={() => onDismiss(toast.id)}
       accessibilityRole="alert"
-      className="flex-row items-start bg-white rounded-[12px] px-4 py-3 mb-2 mx-[21px]"
+      className="flex-row items-start bg-white dark:bg-[#1a1a1a] rounded-[12px] px-4 py-3 mb-2 mx-[21px]"
       style={{
         borderLeftWidth: 4,
         borderLeftColor: tint,
@@ -35,12 +37,12 @@ export function ToastView({ toast, onDismiss }: ToastViewProps) {
     >
       <Icon size={22} color={tint} style={{ marginTop: 2 }} />
       <View className="flex-1 ml-3">
-        <Text className="text-[15px] text-[#1a1a1a] font-semibold">{toast.title}</Text>
+        <Text className="text-[15px] text-[#1a1a1a] dark:text-white font-semibold">{toast.title}</Text>
         {toast.message ? (
-          <Text className="text-[13px] text-[#555] mt-0.5 leading-[18px]">{toast.message}</Text>
+          <Text className="text-[13px] text-[#555] dark:text-[#d4d4d4] mt-0.5 leading-[18px]">{toast.message}</Text>
         ) : null}
       </View>
-      <X size={16} color="#999" style={{ marginTop: 3 }} />
+      <X size={16} color={palette.textMuted} style={{ marginTop: 3 }} />
     </Pressable>
   );
 }

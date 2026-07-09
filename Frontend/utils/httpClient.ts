@@ -67,6 +67,23 @@ axiosInstance.interceptors.response.use(
         "| url:", err?.config?.url,
         "| name:", err?.name
       );
+      // iOS-simulator socket bug: in a bad run, fetch POSTs abort while XHR can
+      // still get through (probe data 2026-07-05). Retry once on the XHR adapter
+      // before declaring a network error. Harmless elsewhere — only fires when
+      // the request never reached the server.
+      const cfg = err?.config;
+      if (cfg && !cfg.__xhrFallback) {
+        cfg.__xhrFallback = true;
+        cfg.adapter = "xhr";
+        console.log("[http] ↻ transport fallback → XHR:", cfg.method?.toUpperCase(), cfg.url);
+        try {
+          return await axiosInstance(cfg);
+        } catch (fallbackErr) {
+          const fe = fallbackErr as { response?: unknown };
+          if (fe?.response) throw fallbackErr;
+          console.log("[http] ✗ XHR fallback also failed");
+        }
+      }
       return Promise.reject({
         status: 0,
         message: "Network error. Please check your connection.",

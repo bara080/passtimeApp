@@ -37,7 +37,8 @@
         "EXPO_PUBLIC_LOGROCKET_APP_ID": "ydig2k/passtime-app",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1060259065398-4t48o67veu5n1qnm70bj1rp59ubf30u3.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1060259065398-i5lhsa08btjst9364n1k6fpbkibjfofs.apps.googleusercontent.com"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
@@ -48,7 +49,8 @@
         "EXPO_PUBLIC_LOGROCKET_APP_ID": "ydig2k/passtime-app",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "1060259065398-4t48o67veu5n1qnm70bj1rp59ubf30u3.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "1060259065398-i5lhsa08btjst9364n1k6fpbkibjfofs.apps.googleusercontent.com"
-      }
+      },
+      "channel": "production"
     },
     "development-device": {
       "extends": "development",

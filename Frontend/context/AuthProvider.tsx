@@ -29,7 +29,7 @@ type AuthContextType = {
   user: AuthUser | null;
   login: (payload: LoginPayload) => Promise<boolean>;
   register: (payload: RegisterPayload) => Promise<boolean>;
-  socialLogin: (payload: Omit<SocialLoginPayload, "deviceInfo">) => Promise<boolean>;
+  socialLogin: (payload: Omit<SocialLoginPayload, "deviceInfo">) => Promise<{ ok: boolean; message?: string }>;
   signOut: () => Promise<void>;
   setUser: (user: AuthUser | null) => void;
   updateUser: (patch: Partial<AuthUser>) => Promise<void>;
@@ -41,7 +41,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   login: async () => false,
   register: async () => false,
-  socialLogin: async () => false,
+  socialLogin: async () => ({ ok: false }),
   signOut: async () => {},
   setUser: () => {},
   updateUser: async () => {},
@@ -54,7 +54,18 @@ const VERIFICATION_SCREENS = new Set([
   "verify-otp",
   "success",
   "profile-details",
+  "host", // (auth)/host/* — host onboarding funnel
 ]);
+
+// Completed step (from /me) → the next route in the host funnel.
+const HOST_STEP_ROUTES: Record<string, string> = {
+  experiences: "/(auth)/host/rate",
+  rate: "/(auth)/host/location",
+  location: "/(auth)/host/career",
+  career: "/(auth)/host/availability",
+  availability: "/(auth)/host/photos",
+  photos: "/(auth)/host/photos",
+};
 
 // First incomplete signup step for a user, or null when fully onboarded.
 // Keeps the verification chain resumable after an app kill/relaunch.
@@ -69,6 +80,10 @@ function getIncompleteStep(user: AuthUser):
   }
   if (!user.firstName) {
     return { pathname: "/(auth)/profile-details" };
+  }
+  if (user.role === "host" && !user.hostOnboardingComplete) {
+    const step = user.hostOnboardingStep;
+    return { pathname: (step && HOST_STEP_ROUTES[step]) || "/(auth)/host/experiences" };
   }
   return null;
 }
@@ -177,10 +192,24 @@ export function SessionProvider({ children }: PropsWithChildren) {
     }
   }, [persistSession]);
 
-  const socialLogin = useCallback(async (payload: Omit<SocialLoginPayload, "deviceInfo">): Promise<boolean> => {
+  const socialLogin = useCallback(async (payload: Omit<SocialLoginPayload, "deviceInfo">): Promise<{ ok: boolean; message?: string }> => {
     try {
       const deviceInfo = Device.modelName ?? "Unknown device";
-      const res = await authApi.socialLogin({ ...payload, deviceInfo });
+      // One retry on transport-level failures (no response reached us): the
+      // exchange is idempotent server-side, and iOS-simulator sockets + flaky
+      // mobile networks both benefit. Real 4xx/5xx responses are NOT retried.
+      let res;
+      try {
+        res = await authApi.socialLogin({ ...payload, deviceInfo });
+      } catch (firstErr) {
+        const isTransport =
+          typeof firstErr === "object" && firstErr !== null &&
+          (firstErr as { isNetworkError?: boolean }).isNetworkError === true;
+        if (!isTransport) throw firstErr;
+        if (__DEV__) console.log("[AuthProvider] social exchange transport error — retrying once");
+        await new Promise((r) => setTimeout(r, 700));
+        res = await authApi.socialLogin({ ...payload, deviceInfo });
+      }
       await persistSession({
         uid: res.user.uid,
         role: res.user.role,
@@ -188,10 +217,17 @@ export function SessionProvider({ children }: PropsWithChildren) {
         refreshToken: res.refreshToken,
         user: res.user,
       });
-      return true;
+      return { ok: true };
     } catch (err) {
-      console.error("[AuthProvider] social login error:", err);
-      return false;
+      if (__DEV__) console.error("[AuthProvider] social login error:", err);
+      // Surface the server's envelope message (e.g. the 409 "log in with your
+      // password" guard) so the UI can show the real reason, not a generic one.
+      const axiosMessage =
+        typeof err === "object" && err !== null && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      const message = axiosMessage || (err instanceof Error ? err.message : undefined);
+      return { ok: false, message };
     }
   }, [persistSession]);
 

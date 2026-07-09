@@ -44,9 +44,9 @@ export default function LoginScreen() {
               onPress={() => setRole(r)}
               accessibilityRole="radio"
               accessibilityState={{ selected: role === r }}
-              className={`flex-1 h-11 items-center justify-center ${role === r ? "bg-[#ff6633]" : "bg-white"}`}
+              className={`flex-1 h-11 items-center justify-center ${role === r ? "bg-[#ff6633]" : "bg-white dark:bg-[#1a1a1a]"}`}
             >
-              <Text className={`text-sm capitalize ${role === r ? "text-white" : "text-[#666]"}`}>{r}</Text>
+              <Text className={`text-sm capitalize ${role === r ? "text-white" : "text-[#666] dark:text-[#9a9a9a]"}`}>{r}</Text>
             </Pressable>
           ))}
         </View>

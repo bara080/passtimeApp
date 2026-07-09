@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { View, Text, Pressable, Modal, FlatList } from "react-native";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react-native";
-import { colors } from "@/constants/theme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 import { GradientButton } from "./GradientButton";
 
 export type DateFieldProps = {
@@ -41,6 +41,7 @@ export function DateField({
   initialYearOffset = 25,
 }: DateFieldProps) {
   const [open, setOpen] = useState(false);
+  const { palette } = useThemeColors();
   const today = new Date();
   const initial = value
     ? new Date(value)
@@ -78,37 +79,37 @@ export function DateField({
 
   return (
     <View className="mb-5">
-      <Text className="text-base text-black mb-2">{label}</Text>
+      <Text className="text-base text-black dark:text-white mb-2">{label}</Text>
       <Pressable
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${value ? formatDisplay(value) : placeholder}`}
-        className={`h-[52px] bg-white border rounded-[8px] px-4 flex-row items-center justify-between ${
-          error ? "border-red-500" : "border-[#d1d5dc]"
+        className={`h-[52px] bg-white dark:bg-[#1a1a1a] border rounded-[8px] px-4 flex-row items-center justify-between ${
+          error ? "border-red-500" : "border-[#d1d5dc] dark:border-[#333333]"
         }`}
       >
-        <Text className={`text-base ${value ? "text-[#1a1a1a]" : "text-[#aaa]"}`}>
+        <Text className={`text-base ${value ? "text-[#1a1a1a] dark:text-white" : "text-[#aaa] dark:text-[#777]"}`}>
           {value ? formatDisplay(value) : placeholder}
         </Text>
-        <Calendar size={20} color={colors.textPrimary} />
+        <Calendar size={20} color={palette.textPrimary} />
       </Pressable>
       {error ? <Text className="text-sm text-red-500 mt-1">{error}</Text> : null}
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable className="flex-1 bg-black/40 justify-center px-[21px]" onPress={() => setOpen(false)}>
-          <Pressable className="bg-white rounded-[16px] p-5" onPress={() => {}}>
+          <Pressable className="bg-white dark:bg-[#1a1a1a] rounded-[16px] p-5" onPress={() => {}}>
             {/* Month / year header */}
             <View className="flex-row items-center justify-between mb-3">
               <Pressable onPress={() => navMonth(-1)} hitSlop={10} accessibilityLabel="Previous month">
-                <ChevronLeft size={22} color={colors.textPrimary} />
+                <ChevronLeft size={22} color={palette.textPrimary} />
               </Pressable>
               <Pressable onPress={() => setYearPickerOpen((v) => !v)} accessibilityRole="button">
-                <Text className="text-base text-[#1a1a1a]">
+                <Text className="text-base text-[#1a1a1a] dark:text-white">
                   {MONTHS[viewMonth]} <Text className="text-[#ff6633]">{viewYear} ▾</Text>
                 </Text>
               </Pressable>
               <Pressable onPress={() => navMonth(1)} hitSlop={10} accessibilityLabel="Next month">
-                <ChevronRight size={22} color={colors.textPrimary} />
+                <ChevronRight size={22} color={palette.textPrimary} />
               </Pressable>
             </View>
 
@@ -125,7 +126,7 @@ export function DateField({
                     }}
                     className="py-2 items-center"
                   >
-                    <Text className={`text-base ${y === viewYear ? "text-[#ff6633]" : "text-[#1a1a1a]"}`}>{y}</Text>
+                    <Text className={`text-base ${y === viewYear ? "text-[#ff6633]" : "text-[#1a1a1a] dark:text-white"}`}>{y}</Text>
                   </Pressable>
                 )}
               />
@@ -156,7 +157,7 @@ export function DateField({
                             className={`w-9 h-9 rounded-full items-center justify-center ${isSelected ? "bg-[#ff6633]" : ""}`}
                           >
                             <Text
-                              className={`text-base ${isSelected ? "text-white" : isFuture ? "text-[#ccc]" : "text-[#1a1a1a]"}`}
+                              className={`text-base ${isSelected ? "text-white" : isFuture ? "text-[#ccc] dark:text-[#555]" : "text-[#1a1a1a] dark:text-white"}`}
                             >
                               {day}
                             </Text>

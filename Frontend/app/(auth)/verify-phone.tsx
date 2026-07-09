@@ -45,7 +45,7 @@ export default function VerifyPhoneScreen() {
       <AuthTitle title="Enter your mobile number" subtitle="Pick your country and enter your number" />
 
       <View className="flex-1 justify-center">
-        <Text className="text-base text-black mb-2">Mobile number</Text>
+        <Text className="text-base text-black dark:text-white mb-2">Mobile number</Text>
         <PhoneInput
           value={nationalNumber}
           onChangeText={setNationalNumber}

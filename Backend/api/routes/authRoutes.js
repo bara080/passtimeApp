@@ -10,21 +10,22 @@ const {
   resetPassword,
   getMe,
   updateMe,
+  deleteMe,
   socialLogin,
 } = require("../controllers/auth");
 const { sendOtp, verifyOtp } = require("../controllers/phoneVerify");
 const { sendVerificationEmail, verifyEmailCode, verifyEmailToken } = require("../controllers/emailVerify");
 const verifyJWT = require("../middlewares/authMiddleware");
-const { otpSendLimiter, otpVerifyLimiter, forgotPasswordLimiter } = require("../middlewares/rateLimiter");
+const { otpSendLimiter, otpVerifyLimiter, forgotPasswordLimiter, loginLimiter, registerLimiter, resetPasswordLimiter } = require("../middlewares/rateLimiter");
 
 // Public
-router.post("/register", registerUser);
-router.post("/login", loginUser);
+router.post("/register", registerLimiter, registerUser);
+router.post("/login", loginLimiter, loginUser);
 router.post("/social", socialLogin);
 router.post("/refresh-token", refreshToken);
 router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);
 router.post("/verify-reset-code", otpVerifyLimiter, verifyResetCode);
-router.post("/reset-password", resetPassword);
+router.post("/reset-password", resetPasswordLimiter, resetPassword);
 
 // OTP — phone
 router.post("/send-otp", otpSendLimiter, sendOtp);
@@ -39,5 +40,6 @@ router.get("/verify-email-token", verifyEmailToken);
 router.post("/logout", verifyJWT, logoutUser);
 router.get("/me", verifyJWT, getMe);
 router.patch("/me", verifyJWT, updateMe);
+router.delete("/me", verifyJWT, deleteMe);
 
 module.exports = router;

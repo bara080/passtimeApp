@@ -16,14 +16,14 @@ export function AvatarPicker({ uri, onPick }: AvatarPickerProps) {
   return (
     <View className="items-center mb-8">
       <Pressable onPress={handlePress} accessibilityRole="button" accessibilityLabel="Add profile photo">
-        <View className="w-[132px] h-[132px] rounded-[20px] bg-[#f7f5f2] items-center justify-center overflow-hidden">
+        <View className="w-[132px] h-[132px] rounded-[20px] bg-[#f7f5f2] dark:bg-[#f4f4f5] items-center justify-center overflow-hidden">
           {uri ? (
             <Image source={{ uri }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
           ) : (
             <User size={72} color="#c9beb2" strokeWidth={1.2} />
           )}
         </View>
-        <View className="absolute -bottom-2 -right-2 w-[44px] h-[44px] rounded-full bg-[#8bc34a] items-center justify-center border-[3px] border-white">
+        <View className="absolute -bottom-2 -right-2 w-[44px] h-[44px] rounded-full bg-[#8bc34a] items-center justify-center border-[3px] border-white dark:border-[#0d0d0d]">
           <Camera size={20} color="#fff" />
         </View>
       </Pressable>

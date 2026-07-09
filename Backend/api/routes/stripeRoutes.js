@@ -15,7 +15,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), handleStripeW
 
 // Host Connect onboarding
 router.post("/connect/onboard", verifyJWT, createConnectAccount);
-router.get("/connect/status/:accountId", getConnectAccountStatus);
+router.get("/connect/status/:accountId", verifyJWT, getConnectAccountStatus);
 router.get("/connect/payout-ready", verifyJWT, isPayoutReady);
 router.post("/connect/onboarding-link", verifyJWT, startPayoutOnboarding);
 

@@ -21,9 +21,9 @@ export function SuccessView({ title, message, buttonLabel, onContinue }: Success
         >
           <Check size={44} color="#fff" strokeWidth={3} />
         </View>
-        <Text className="text-[26px] text-black text-center">{title}</Text>
+        <Text className="text-[26px] text-black dark:text-white text-center">{title}</Text>
         {message ? (
-          <Text className="text-base text-[#444] text-center mt-3 leading-[22px]">{message}</Text>
+          <Text className="text-base text-[#444] dark:text-[#d4d4d4] text-center mt-3 leading-[22px]">{message}</Text>
         ) : null}
       </View>
       <GradientButton label={buttonLabel} onPress={onContinue} />

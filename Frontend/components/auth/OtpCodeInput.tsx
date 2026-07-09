@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, type TextInputProps } from "react-native";
 import { colors } from "@/constants/theme";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 export type OtpCodeInputProps = {
   /** Number of digits (5 for SMS, 6 for email). */
@@ -15,6 +16,7 @@ export type OtpCodeInputProps = {
 /** Boxed one-time-code input backed by a hidden TextInput (keeps native keyboard + OTP autofill). */
 export function OtpCodeInput({ length, value, onChangeText, autoFocus = true, autoComplete = "one-time-code" }: OtpCodeInputProps) {
   const inputRef = useRef<TextInput>(null);
+  const { palette } = useThemeColors();
 
   const handleChange = (text: string) => {
     onChangeText(text.replace(/\D/g, "").slice(0, length));
@@ -36,8 +38,15 @@ export function OtpCodeInput({ length, value, onChangeText, autoFocus = true, au
       />
       <TouchableOpacity style={styles.row} onPress={() => inputRef.current?.focus()} activeOpacity={1}>
         {Array.from({ length }).map((_, i) => (
-          <View key={i} style={[styles.box, value[i] ? styles.boxFilled : null]}>
-            <Text style={styles.digit}>{value[i] ?? ""}</Text>
+          <View
+            key={i}
+            style={[
+              styles.box,
+              { borderColor: palette.border, backgroundColor: palette.surfaceAlt },
+              value[i] ? { borderColor: palette.accent, backgroundColor: palette.surface } : null,
+            ]}
+          >
+            <Text style={[styles.digit, { color: palette.textPrimary }]}>{value[i] ?? ""}</Text>
           </View>
         ))}
       </TouchableOpacity>
@@ -54,6 +63,7 @@ export type ResendCodeRowProps = {
 };
 
 export function ResendCodeRow({ seconds, canResend, sending, onResend }: ResendCodeRowProps) {
+  const { palette } = useThemeColors();
   return (
     <View style={styles.resendRow}>
       {canResend ? (
@@ -61,7 +71,7 @@ export function ResendCodeRow({ seconds, canResend, sending, onResend }: ResendC
           <Text style={styles.resendLink}>{sending ? "Sending..." : "Resend code"}</Text>
         </TouchableOpacity>
       ) : (
-        <Text style={styles.resendTimer}>Resend in {seconds}s</Text>
+        <Text style={[styles.resendTimer, { color: palette.textMuted }]}>Resend in {seconds}s</Text>
       )}
     </View>
   );
