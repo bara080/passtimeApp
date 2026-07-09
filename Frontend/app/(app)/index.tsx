@@ -1,24 +1,178 @@
-import { View, Text, ScrollView } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { View, ScrollView, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, type Href } from "expo-router";
 import { useAuth } from "@/context/AuthProvider";
+import { useToast } from "@/context/ToastProvider";
+import {
+  HomeHeader,
+  HomeSearchBar,
+  CategoryCarousel,
+  SectionHeader,
+  HostCarousel,
+  UpcomingBookingCard,
+} from "@/components/home";
+import { useDiscoverHosts } from "@/services/hosts/hooks";
+import { useMyBookings } from "@/services/bookings/hooks";
+import type { HostCard } from "@/services/hosts/types";
+import type { ExperienceTypeKey } from "@/services/host/types";
+import { getRecentlyViewed, addRecentlyViewed } from "@/utils/recentlyViewed";
+import { trackEvent } from "@/utils/analytics";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { routeForNotificationData } from "@/utils/notificationRoutes";
+import type { NotificationType } from "@/services/notifications/types";
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const toast = useToast();
   const { user } = useAuth();
 
-  return (
-    <SafeAreaView className="flex-1 bg-white">
-      <ScrollView className="flex-1 px-5 pt-6">
-        <Text className="text-2xl font-bold text-[#1a1a1a]">
-          Hi, {user?.firstName || "there"} 👋
-        </Text>
-        <Text className="text-base text-[#666] mt-1 mb-6">
-          {user?.role === "host" ? "Manage your experiences" : "Discover experiences near you"}
-        </Text>
+  // Member location isn't collected yet (memberDesign.md deviation) — the
+  // header prompts "Set your location" and "nearby" stays hidden until then.
+  const memberCity: string | null = null;
 
-        {/* Placeholder content */}
-        <View className="h-40 bg-[#f6f3f0] rounded-xl items-center justify-center">
-          <Text className="text-[#999]">Featured experiences coming soon</Text>
-        </View>
+  const upcoming = useMyBookings("upcoming");
+  const current = useMyBookings("current");
+  const nextUpcoming = upcoming.data?.[0];
+  const activeBooking = current.data?.[0];
+
+  const recommended = useDiscoverHosts({ section: "recommended", limit: 10 });
+  const nearby = useDiscoverHosts(
+    { section: "nearby", city: memberCity ?? undefined, limit: 10 },
+    { enabled: Boolean(memberCity) }
+  );
+  const [recentUids, setRecentUids] = useState<string[]>([]);
+
+  useEffect(() => {
+    trackEvent("home.viewed");
+    getRecentlyViewed().then((entries) => setRecentUids(entries.map((e) => e.uid)));
+  }, []);
+
+  // Register for push (no-op in Expo Go / simulator) and deep-link on tap.
+  usePushNotifications(user?.uid ?? null, (data) => {
+    const type = (data.type as NotificationType) || "general";
+    const target = routeForNotificationData(type, data as Record<string, unknown>);
+    if (target) router.push(target as unknown as Href);
+  });
+
+  const openHost = (host: HostCard, section: string) => {
+    trackEvent("home.host.tap", { uid: host.uid, section });
+    addRecentlyViewed(host.uid);
+    setRecentUids((prev) => [host.uid, ...prev.filter((u) => u !== host.uid)].slice(0, 10));
+    // Dedicated host-profile screen is its own plan (Figma 1288:6539); for
+    // now the card tap jumps straight into the booking flow.
+    router.push({
+      pathname: "/(app)/book/[hostUid]",
+      params: { hostUid: host.uid, hostName: host.firstName || host.displayName },
+    } as unknown as Href);
+  };
+
+  const openCategory = (key: ExperienceTypeKey) => {
+    trackEvent("home.category.tap", { key });
+    router.push({ pathname: "/(app)/explore", params: { category: key } });
+  };
+
+  const openSearch = () => {
+    trackEvent("home.search.tap");
+    router.push("/(app)/explore");
+  };
+
+  const seeAll = (section: string) => {
+    trackEvent("home.seeall.tap", { section });
+    router.push({ pathname: "/(app)/explore", params: { section } });
+  };
+
+  const refreshing = recommended.isRefetching || nearby.isRefetching;
+  const onRefresh = useCallback(() => {
+    recommended.refetch();
+    nearby.refetch();
+  }, [recommended, nearby]);
+
+  // Recently viewed v1: hydrate from already-fetched cards (client-only history).
+  const loadedHosts = [...(recommended.data ?? []), ...(nearby.data ?? [])];
+  const recentlyViewedHosts = recentUids
+    .map((uid) => loadedHosts.find((h) => h.uid === uid))
+    .filter((h): h is HostCard => Boolean(h));
+
+  return (
+    <SafeAreaView className="flex-1 bg-white dark:bg-[#0d0d0d]">
+      <ScrollView
+        className="flex-1 px-[21px] pt-2"
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ff6633" />}
+      >
+        <HomeHeader
+          addressLine={memberCity}
+          avatarUrl={user?.avatarUrl}
+          onPressBell={() => router.push("/(app)/notifications" as unknown as Href)}
+          onPressAvatar={() => router.push("/(app)/profile")}
+        />
+        <HomeSearchBar onPress={openSearch} />
+
+        <SectionHeader title="Explore by categories" />
+        <CategoryCarousel onSelect={openCategory} />
+
+        {activeBooking ? (
+          <>
+            <SectionHeader title="Current booking" />
+            <UpcomingBookingCard
+              booking={activeBooking}
+              active
+              onView={() =>
+                router.push({
+                  pathname: "/(app)/bookings/[bookingId]",
+                  params: { bookingId: activeBooking.bookingId },
+                } as unknown as Href)
+              }
+              onChat={() => toast.info("Coming soon", "Chat unlocks after slice 7.")}
+            />
+          </>
+        ) : nextUpcoming ? (
+          <>
+            <SectionHeader title="Upcoming booking" />
+            <UpcomingBookingCard
+              booking={nextUpcoming}
+              onView={() =>
+                router.push({
+                  pathname: "/(app)/bookings/[bookingId]",
+                  params: { bookingId: nextUpcoming.bookingId },
+                } as unknown as Href)
+              }
+              onChat={() => toast.info("Coming soon", "Chat unlocks after slice 7.")}
+            />
+          </>
+        ) : null}
+
+        <SectionHeader title="Recommended for You" onSeeAll={() => seeAll("recommended")} />
+        <HostCarousel
+          hosts={recommended.data}
+          loading={recommended.isPending}
+          onPressHost={(h) => openHost(h, "recommended")}
+        />
+
+        {memberCity ? (
+          <>
+            <SectionHeader title="Hosts near you" onSeeAll={() => seeAll("nearby")} />
+            <HostCarousel
+              hosts={nearby.data}
+              loading={nearby.isPending}
+              onPressHost={(h) => openHost(h, "nearby")}
+            />
+          </>
+        ) : null}
+
+        {recentlyViewedHosts.length > 0 ? (
+          <>
+            <SectionHeader title="Recently viewed" />
+            <HostCarousel
+              hosts={recentlyViewedHosts}
+              loading={false}
+              onPressHost={(h) => openHost(h, "recent")}
+            />
+          </>
+        ) : null}
+
+        <View className="h-28" />
       </ScrollView>
     </SafeAreaView>
   );

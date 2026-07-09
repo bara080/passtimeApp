@@ -6,6 +6,9 @@ const VerificationSchema = require("../models/verificationModel");
 const PasswordResetSchema = require("../models/passwordResetModel");
 const WebhookEventSchema = require("../models/webhookEventModel");
 const PaymentSchema = require("../models/paymentModel");
+const BookingSchema = require("../models/bookingModel");
+const NotificationSchema = require("../models/notificationModel");
+const ConversationSchema = require("../models/conversationModel");
 
 const connections = {};
 let mongoReadyCallback = () => {};
@@ -71,6 +74,15 @@ function registerAllModels() {
   // Member-only models
   connections["member"].model("WebhookEvent", WebhookEventSchema);
   connections["member"].model("Payment", PaymentSchema);
+  connections["member"].model("Booking", BookingSchema);
+  connections["member"].model("Conversation", ConversationSchema);
+
+  // Notifications registered in BOTH clusters (a host and a member can share
+  // the same uid namespace-wise; notifyUser writes to whichever cluster the
+  // recipient's role points to).
+  for (const role of ["member", "host"]) {
+    connections[role].model("Notification", NotificationSchema);
+  }
 }
 
 async function establishMongoConnections() {

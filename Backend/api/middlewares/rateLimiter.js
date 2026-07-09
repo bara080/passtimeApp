@@ -64,3 +64,22 @@ exports.uploadUrlLimiter = rateLimit({
   legacyHeaders: false,
   message: { status: 1, message: "Too many uploads. Try again later.", data: null },
 });
+
+// 30 messages per minute per IP+uid (chat.md — fixes Zinga GAP-13).
+exports.sendMessageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => `${req.ip}:${req.user?.uid || "anon"}`,
+  message: { status: 1, message: "You are messaging too fast. Slow down.", data: null },
+});
+
+// 10 booking creations per hour per IP (prevents request-spam floods on hosts)
+exports.createBookingLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { status: 1, message: "Too many booking requests. Try again later.", data: null },
+});

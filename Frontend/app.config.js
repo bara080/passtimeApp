@@ -6,6 +6,7 @@ module.exports = {
     orientation: "portrait",
     icon: "./assets/app-icon.png",
     scheme: "passtime",
+    platforms: ["ios", "android"],
     runtimeVersion: "1.0.0",
     updates: {
       url: "https://u.expo.dev/0672d58c-18b5-4f30-8bc9-98fe8d2b9b23",

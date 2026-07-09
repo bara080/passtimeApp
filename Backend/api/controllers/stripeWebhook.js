@@ -2,6 +2,8 @@ require("dotenv").config();
 const stripe = require("../config/stripe");
 const { getConnection } = require("../config/db");
 const { getUserModel } = require("../config/db");
+const { canTransition } = require("../utils/bookingStateMachine");
+const { notifyUser } = require("../utils/notifyUser");
 
 function log(level, event, meta = {}) {
   console[level === "error" ? "error" : level === "warn" ? "warn" : "log"](
@@ -73,16 +75,55 @@ async function handlePaymentSucceeded(paymentIntent) {
   const { id, metadata } = paymentIntent;
   const conn = getConnection("member");
   const Payment = conn.model("Payment");
+  const Booking = conn.model("Booking");
 
   await Payment.updateOne(
     { stripePaymentIntentId: id },
     { status: "succeeded" }
   );
 
+  // Advance the booking accepted → confirmed. Idempotent: same event replayed
+  // hits the state-machine guard the second time and no-ops. bookingId comes
+  // from the PaymentIntent metadata we set in booking.pay.
+  const bookingId = metadata?.bookingId;
+  if (bookingId) {
+    const booking = await Booking.findOne({ bookingId });
+    if (booking) {
+      const decision = canTransition(booking.status, "pay_confirmed", "system");
+      if (decision.ok) {
+        booking.status = decision.to;
+        booking.logs.push({ at: new Date(), actor: "system", event: "pay_confirmed" });
+        await booking.save();
+        log("log", "booking.confirmed", { bookingId, paymentIntentId: id });
+        // Notify both parties on payment success — booking is now confirmed.
+        notifyUser({
+          uid: booking.hostUid,
+          role: "host",
+          title: "Booking confirmed",
+          body: `${booking.memberSnapshot?.displayName || "A member"} paid — see you soon.`,
+          type: "payment_success",
+          data: { bookingId },
+        }).catch((e) => console.error("[webhook.notify host] failed:", e.message));
+        notifyUser({
+          uid: booking.memberUid,
+          role: "member",
+          title: "Payment confirmed",
+          body: "Your booking is locked in.",
+          type: "payment_success",
+          data: { bookingId },
+        }).catch((e) => console.error("[webhook.notify member] failed:", e.message));
+      } else {
+        // Idempotent replay or race — informational only.
+        log("log", "booking.pay.noop", { bookingId, status: booking.status, reason: decision.message });
+      }
+    }
+  }
+
   log("log", "stripe.payment.succeeded", {
     paymentIntentId: id,
     memberUid: metadata?.memberUid,
     hostUid: metadata?.hostUid,
+    bookingId,
   });
 }
 

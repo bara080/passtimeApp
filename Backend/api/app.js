@@ -11,6 +11,9 @@ const authRoutes = require("./routes/authRoutes");
 const stripeRoutes = require("./routes/stripeRoutes");
 const mediaRoutes = require("./routes/mediaRoutes");
 const hostRoutes = require("./routes/hostRoutes");
+const bookingRoutes = require("./routes/bookingRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const chatRoutes = require("./routes/chatRoutes");
 
 const app = express();
 
@@ -122,6 +125,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/stripe", stripeRoutes);
 app.use("/api/media", mediaRoutes);
 app.use("/api/host", hostRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/chats", chatRoutes);
 
 // ── Sentry error handler ─────────────────────────────────────────────────────
 Sentry.setupExpressErrorHandler(app);

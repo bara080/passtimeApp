@@ -103,9 +103,15 @@ exports.getConnectAccountStatus = async (req, res, next) => {
   }
 };
 
-// ── Create Payment Intent (Member books an experience) ────────────────────────
+// ── Create Payment Intent (LEGACY, deprecated) ───────────────────────────────
+// Superseded by POST /api/bookings/:id/pay which computes amount from the
+// server-side Booking row (see booking.md §4, productionReadiness.md task 7.1).
+// Kept behind an env flag for a grace period; new clients must not call it.
 exports.createPaymentIntent = async (req, res, next) => {
   try {
+    if (process.env.ALLOW_LEGACY_PAYMENT_INTENT !== "true") {
+      return error(res, 410, "This endpoint is deprecated. Use POST /api/bookings/:id/pay.");
+    }
     if (!stripe) throw new AppError("Stripe not configured.", 500);
 
     const { hostUid, amount, currency = "usd", bookingId, metadata = {} } = req.body;
@@ -115,13 +121,10 @@ exports.createPaymentIntent = async (req, res, next) => {
     if (typeof amount !== "number" || amount < 50) {
       return error(res, 400, "amount must be a number ≥ 50 (cents).");
     }
-    // INTERIM guard: cap amount at $5,000 until Bookings model + server-side
-    // pricing lands. See securityAudit.md H-4 — the client MUST NOT set price.
     const MAX_AMOUNT_CENTS = 500_000;
     if (amount > MAX_AMOUNT_CENTS) {
       return error(res, 400, "amount exceeds the transaction limit.");
     }
-    // Sanity: bookingId must be a plausible id, currency must be an allowlisted 3-letter code.
     const ALLOWED_CURRENCIES = ["usd"];
     if (!ALLOWED_CURRENCIES.includes(String(currency).toLowerCase())) {
       return error(res, 400, "Unsupported currency.");

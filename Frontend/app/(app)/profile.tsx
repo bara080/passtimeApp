@@ -11,7 +11,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-[#0d0d0d]">
-      <View className="flex-1 px-5 pt-8">
+      <View className="flex-1 px-5 pt-8 pb-24">
         <View className="items-center mb-8">
           <View className="w-20 h-20 rounded-full bg-[#f6f3f0] dark:bg-[#1a1a1a] items-center justify-center mb-3">
             <User size={40} color="#ff6633" />

@@ -47,6 +47,7 @@
     "expo-system-ui": "~6.0.9",
     "expo-updates": "~29.0.18",
     "expo-web-browser": "~15.0.7",
+    "firebase": "^12.15.0",
     "jwt-decode": "^4.0.0",
     "libphonenumber-js": "^1.11.19",
     "lucide-react-native": "^1.14.0",

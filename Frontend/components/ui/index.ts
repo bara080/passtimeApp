@@ -7,3 +7,4 @@ export { TextInputBox, type TextInputBoxProps } from "./TextInputBox";
 export { ThemeToggle, type ThemeToggleProps } from "./ThemeToggle";
 export { ToggleSwitch, type ToggleSwitchProps } from "./ToggleSwitch";
 export { ToastView, type ToastViewProps } from "./ToastView";
+export { EmptyState, type EmptyStateProps } from "./EmptyState";

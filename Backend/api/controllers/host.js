@@ -1,4 +1,6 @@
 const { getUserModel } = require("../config/db");
+const { toPublicHostCard } = require("../utils/publicProjections");
+const { EXPERIENCE_TYPES } = require("../utils/hostValidators");
 const { success, error } = require("../utils/responseFormatter");
 const { validateAvailability } = require("../utils/availabilityValidators");
 const {
@@ -107,6 +109,48 @@ exports.updateAvailability = async (req, res, next) => {
     );
 
     return success(res, "Availability saved.", { availability });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── GET /api/hosts/discover ───────────────────────────────────────────────────
+// Member-facing host discovery. Only fully-onboarded, active hosts; results
+// pass through the public projection allowlist (privacy boundary).
+exports.discoverHosts = async (req, res, next) => {
+  try {
+    const { section = "recommended", category, city } = req.query;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 20);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+
+    if (!["recommended", "nearby"].includes(section)) {
+      return error(res, 400, "section must be 'recommended' or 'nearby'.");
+    }
+    if (category !== undefined && !EXPERIENCE_TYPES.includes(category)) {
+      return error(res, 400, "Unknown category.");
+    }
+
+    const query = { hostOnboardingComplete: true, isActive: true };
+    if (category) query.experienceTypes = category;
+    // "nearby" v1: same-city match when the client provides one; falls back to
+    // the recommended ordering otherwise (no geo coordinates collected yet).
+    if (section === "nearby" && typeof city === "string" && city.trim()) {
+      query["location.city"] = new RegExp(`^${city.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i");
+    }
+
+    const HostModel = getUserModel("host");
+    const hosts = await HostModel.find(query)
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit)
+      .select("uid displayName firstName dateOfBirth photos avatarUrl location experienceTypes hourlyRate currency");
+
+    return success(res, "OK", {
+      section,
+      hosts: hosts.map(toPublicHostCard),
+      offset,
+      limit,
+    });
   } catch (err) {
     next(err);
   }

@@ -49,7 +49,16 @@ const userSchema = new mongoose.Schema(
     hostOnboardingStep: { type: String, default: null },
     hostOnboardingComplete: { type: Boolean, default: false },
     // Push notifications
+    // Legacy single-token field (kept for the current binary; new writes go to expoPushTokens).
     pushToken: { type: String },
+    // Multi-device push tokens (Zinga pattern) — dedupe by (token) at write time.
+    expoPushTokens: [
+      {
+        token: { type: String, required: true },
+        platform: { type: String, enum: ["ios", "android"] },
+        lastUpdated: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );

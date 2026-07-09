@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthProvider";
 import { validateName, validateDateOfBirthIso } from "@/utils/validation";
 
 export default function ProfileDetailsScreen() {
-  const { updateUser } = useAuth();
+  const { updateUser, user: authUser } = useAuth();
   const updateProfile = useUpdateProfileMutation();
   const avatarUpload = useAvatarUploadMutation();
 
@@ -64,15 +64,20 @@ export default function ProfileDetailsScreen() {
         displayName: user.displayName,
         dateOfBirth: user.dateOfBirth,
       });
-      router.replace({
-        pathname: "/(auth)/success",
-        params: {
-          title: "Thank you",
-          message: "Your profile has been successfully created to Passtime.",
-          buttonLabel: "Explore Passtime",
-          next: "/(app)",
-        },
-      });
+      if (authUser?.role === "host") {
+        // Hosts continue into business onboarding (Figma host reg step 18).
+        router.replace("/(auth)/host/experiences");
+      } else {
+        router.replace({
+          pathname: "/(auth)/success",
+          params: {
+            title: "Thank you",
+            message: "Your profile has been successfully created to Passtime.",
+            buttonLabel: "Explore Passtime",
+            next: "/(app)",
+          },
+        });
+      }
     } catch (err: unknown) {
       Alert.alert("Error", err instanceof Error ? err.message : "Could not save your profile.");
     }

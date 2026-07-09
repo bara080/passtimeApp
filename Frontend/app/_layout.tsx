@@ -15,6 +15,8 @@ import { StripeProvider } from "@stripe/stripe-react-native";
 import { QueryProvider } from "@/components/queryproviders";
 import { SessionProvider } from "@/context/AuthProvider";
 import { ToastProvider } from "@/context/ToastProvider";
+import { NotificationProvider } from "@/context/NotificationProvider";
+import { ChatProvider } from "@/context/ChatProvider";
 
 Sentry.init({
   dsn:
@@ -66,7 +68,11 @@ function RootLayout() {
         <QueryProvider>
           <ToastProvider>
             <SessionProvider>
-              <Stack screenOptions={{ headerShown: false }} />
+              <NotificationProvider>
+                <ChatProvider>
+                  <Stack screenOptions={{ headerShown: false }} />
+                </ChatProvider>
+              </NotificationProvider>
             </SessionProvider>
           </ToastProvider>
         </QueryProvider>
