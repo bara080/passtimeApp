@@ -12,10 +12,29 @@
 //     the payload still goes to the feed but not to the device banner
 //     (avoids spam from an action the user just performed).
 
-const { Expo } = require("expo-server-sdk");
 const { getConnection, getUserModel } = require("../config/db");
 
-const expo = new Expo();
+// expo-server-sdk v6 ships ESM-only, which breaks require() on Vercel's CJS
+// runtime. Lazy-load via dynamic import and cache the module + instance so the
+// first push pays a one-time hit and subsequent calls stay hot.
+let _expoModPromise = null;
+async function getExpoMod() {
+  if (!_expoModPromise) _expoModPromise = import("expo-server-sdk");
+  return _expoModPromise;
+}
+let _expoInstance = null;
+async function getExpo() {
+  if (_expoInstance) return _expoInstance;
+  const mod = await getExpoMod();
+  const Expo = mod.Expo || mod.default?.Expo || mod.default;
+  _expoInstance = new Expo();
+  return _expoInstance;
+}
+async function isExpoPushToken(token) {
+  const mod = await getExpoMod();
+  const Expo = mod.Expo || mod.default?.Expo || mod.default;
+  return Expo.isExpoPushToken(token);
+}
 
 function logline(level, event, meta = {}) {
   console[level === "error" ? "error" : level === "warn" ? "warn" : "log"](
@@ -46,10 +65,10 @@ async function sendPush({ recipientUid, role, title, body, data, suppressForActo
   const user = await UserModel.findOne({ uid: recipientUid }).select("expoPushTokens pushToken");
   const tokens = new Set();
   for (const entry of user?.expoPushTokens || []) {
-    if (entry?.token && Expo.isExpoPushToken(entry.token)) tokens.add(entry.token);
+    if (entry?.token && (await isExpoPushToken(entry.token))) tokens.add(entry.token);
   }
   // Fall back to the legacy single-field token so today's binaries keep receiving push.
-  if (user?.pushToken && Expo.isExpoPushToken(user.pushToken)) tokens.add(user.pushToken);
+  if (user?.pushToken && (await isExpoPushToken(user.pushToken))) tokens.add(user.pushToken);
   if (tokens.size === 0) return { skipped: "no-tokens" };
 
   const messages = [...tokens].map((to) => ({
@@ -59,6 +78,7 @@ async function sendPush({ recipientUid, role, title, body, data, suppressForActo
     sound: "default",
     data: data || {},
   }));
+  const expo = await getExpo();
   const chunks = expo.chunkPushNotifications(messages);
   const tickets = [];
   for (const chunk of chunks) {
