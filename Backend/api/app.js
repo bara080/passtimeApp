@@ -34,16 +34,32 @@ setMongoReadyCallback((ready) => {
 });
 
 // ── Cold-start infra bootstrap ──────────────────────────────────────────────
-const infraReadyPromise = (async () => {
+// Mongo is required — the gate blocks on it. Redis is best-effort — it boots
+// in parallel but never blocks a request. Auth middleware falls back to
+// JWT-only trust when Redis isn't ready (see authMiddleware.js), so cold
+// starts don't pay Redis's ~4s TCP+TLS handshake.
+const mongoReadyPromise = (async () => {
   try {
-    await Promise.all([connectDB(), connectRedis()]);
-    global.__REDIS_READY__ = true;
+    await connectDB();
     global.__APP_READY__ = true;
-    console.log("🚀 Infra ready");
+    console.log("🚀 Mongo ready (gate open)");
   } catch (err) {
-    console.error("❌ Infra bootstrap failed:", err.message);
+    console.error("❌ Mongo bootstrap failed:", err.message);
   }
 })();
+
+// Redis fires-and-forgets. It flips __REDIS_READY__ when connected — no one
+// awaits this promise on the request path.
+connectRedis()
+  .then(() => {
+    global.__REDIS_READY__ = true;
+    console.log("🚀 Redis ready (auth strict mode active)");
+  })
+  .catch((err) => {
+    console.warn("⚠️ Redis bootstrap failed — running JWT-only:", err.message);
+  });
+
+const infraReadyPromise = mongoReadyPromise; // gate compat
 
 // ── Stripe webhook (raw body — MUST be before express.json()) ───────────────
 app.use("/api/stripe/webhook", express.raw({ type: "application/json" }));
@@ -95,6 +111,40 @@ app.get("/api/health", (req, res) => {
       redis: global.__REDIS_READY__,
       ready: global.__APP_READY__,
     },
+  });
+});
+
+// ── Warmup — hit by Vercel Cron every ~4 min. Actively touches Mongo + Redis
+// so their pooled connections don't idle-close between real user requests
+// (Mongo maxIdleTimeMS is 270s; without a periodic ping the pool empties and
+// the next real request pays a fresh dial). Fire-and-forget: never fails the
+// cron even if a subsystem is down.
+app.get("/api/warmup", async (req, res) => {
+  const started = Date.now();
+  const touches = { mongo: false, redis: false };
+  try {
+    const { getConnection } = require("./config/db");
+    const memberConn = getConnection("member");
+    if (memberConn?.readyState === 1) {
+      await memberConn.db.admin().ping();
+      touches.mongo = true;
+    }
+  } catch (err) {
+    console.warn("warmup mongo skip:", err.message);
+  }
+  try {
+    const { getRedis, isRedisReady } = require("./config/redis");
+    if (isRedisReady()) {
+      await getRedis().ping();
+      touches.redis = true;
+    }
+  } catch (err) {
+    console.warn("warmup redis skip:", err.message);
+  }
+  res.json({
+    status: 0,
+    message: "warm",
+    data: { touches, elapsedMs: Date.now() - started },
   });
 });
 

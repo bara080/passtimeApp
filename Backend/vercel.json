@@ -11,5 +11,8 @@
       "src": "/(.*)",
       "dest": "index.js"
     }
+  ],
+  "crons": [
+    { "path": "/api/warmup", "schedule": "*/5 * * * *" }
   ]
 }

@@ -70,8 +70,15 @@ function getRedis() {
   return redisClient;
 }
 
+/** True when Redis is connected and ready to accept commands. Callers on
+ *  cold-start-sensitive paths (auth middleware) check this before touching
+ *  Redis so they can degrade gracefully. */
+function isRedisReady() {
+  return Boolean(redisClient?.isReady);
+}
+
 async function disconnectRedis() {
   if (redisClient?.isOpen) await redisClient.quit();
 }
 
-module.exports = { connectRedis, getRedis, disconnectRedis };
+module.exports = { connectRedis, getRedis, isRedisReady, disconnectRedis };
