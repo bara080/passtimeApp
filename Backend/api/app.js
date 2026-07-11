@@ -27,10 +27,13 @@ global.__DB_READY__ = false;
 global.__REDIS_READY__ = false;
 global.__APP_READY__ = false;
 
+// Mirror __APP_READY__ ← __DB_READY__ so a disconnect re-closes the gate.
+// Old code left __APP_READY__ true forever → hung requests on idle drop.
 setMongoReadyCallback((ready) => {
   global.__DB_READY__ = ready;
-  if (ready) console.log("✅ DB ready flag set");
-  else console.warn("⚠️ DB ready flag cleared");
+  global.__APP_READY__ = ready; // was: only ever set true in mongoReadyPromise below
+  if (ready) console.log("✅ DB ready flag set (gate open)");
+  else console.warn("⚠️ DB ready flag cleared (gate closed)");
 });
 
 // ── Cold-start infra bootstrap ──────────────────────────────────────────────
@@ -41,8 +44,8 @@ setMongoReadyCallback((ready) => {
 const mongoReadyPromise = (async () => {
   try {
     await connectDB();
-    global.__APP_READY__ = true;
-    console.log("🚀 Mongo ready (gate open)");
+    // global.__APP_READY__ = true; // old: superseded by setMongoReadyCallback above
+    console.log("🚀 Mongo bootstrap resolved");
   } catch (err) {
     console.error("❌ Mongo bootstrap failed:", err.message);
   }
@@ -114,37 +117,72 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// ── Warmup — hit by Vercel Cron every ~4 min. Actively touches Mongo + Redis
-// so their pooled connections don't idle-close between real user requests
-// (Mongo maxIdleTimeMS is 270s; without a periodic ping the pool empties and
-// the next real request pays a fresh dial). Fire-and-forget: never fails the
-// cron even if a subsystem is down.
+// ── Warmup — Vercel Cron every 5 min. Waits ≤6s for bootstrap, re-dials
+// dead pools, then pings. Old fire-and-forget version returned early on
+// cold containers so the pool never got warmed for that Lambda.
 app.get("/api/warmup", async (req, res) => {
   const started = Date.now();
   const touches = { mongo: false, redis: false };
+  const notes = [];
+
+  // Wait ≤6s for async bootstrap (cron path, so a slow response is ok).
+  const deadline = started + 6000;
+  while (!global.__APP_READY__ && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  const { connectDB, getConnection } = require("./config/db");
+  const { connectRedis, getRedis, isRedisReady } = require("./config/redis");
+
+  // Gate still closed after wait → active re-dial. Observed: Atlas idle
+  // drops leave a Lambda dead until the next request pokes it. connectDB
+  // is idempotent (fast-returns if both conns readyState=1).
+  if (!global.__APP_READY__) {
+    try {
+      await connectDB();
+      notes.push("mongo re-dial ok");
+    } catch (err) {
+      notes.push(`mongo re-dial failed: ${err.message}`);
+    }
+  }
+  if (!isRedisReady()) {
+    try {
+      await connectRedis();
+      notes.push("redis re-dial ok");
+    } catch (err) {
+      notes.push(`redis re-dial failed: ${err.message}`);
+    }
+  }
+
   try {
-    const { getConnection } = require("./config/db");
     const memberConn = getConnection("member");
     if (memberConn?.readyState === 1) {
       await memberConn.db.admin().ping();
       touches.mongo = true;
+    } else {
+      notes.push(`mongo not ready (state=${memberConn?.readyState})`);
     }
   } catch (err) {
-    console.warn("warmup mongo skip:", err.message);
+    // old: console.warn("warmup mongo skip:", err.message);
+    notes.push(`mongo skip: ${err.message}`);
   }
+
   try {
-    const { getRedis, isRedisReady } = require("./config/redis");
     if (isRedisReady()) {
       await getRedis().ping();
       touches.redis = true;
+    } else {
+      notes.push("redis not ready");
     }
   } catch (err) {
-    console.warn("warmup redis skip:", err.message);
+    // old: console.warn("warmup redis skip:", err.message);
+    notes.push(`redis skip: ${err.message}`);
   }
+
   res.json({
     status: 0,
     message: "warm",
-    data: { touches, elapsedMs: Date.now() - started },
+    data: { touches, elapsedMs: Date.now() - started, notes },
   });
 });
 
