@@ -8,10 +8,20 @@ export type HostCarouselProps = {
   loading: boolean;
   onPressHost: (host: HostCardData) => void;
   emptyText?: string;
+  /** When provided, each card shows a heart reflecting membership in this set. */
+  favoriteIds?: Set<string>;
+  onToggleFavorite?: (host: HostCardData) => void;
 };
 
 /** Horizontal host strip with skeleton and empty states. */
-export function HostCarousel({ hosts, loading, onPressHost, emptyText = "No hosts yet — check back soon." }: HostCarouselProps) {
+export function HostCarousel({
+  hosts,
+  loading,
+  onPressHost,
+  emptyText = "No hosts yet — check back soon.",
+  favoriteIds,
+  onToggleFavorite,
+}: HostCarouselProps) {
   const { palette } = useThemeColors();
 
   if (loading) {
@@ -43,7 +53,14 @@ export function HostCarousel({ hosts, loading, onPressHost, emptyText = "No host
       data={hosts}
       keyExtractor={(h) => h.uid}
       contentContainerStyle={{ gap: 12, paddingRight: 21 }}
-      renderItem={({ item }) => <HostCard host={item} onPress={() => onPressHost(item)} />}
+      renderItem={({ item }) => (
+        <HostCard
+          host={item}
+          onPress={() => onPressHost(item)}
+          isFavorite={favoriteIds?.has(item.uid)}
+          onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(item) : undefined}
+        />
+      )}
     />
   );
 }

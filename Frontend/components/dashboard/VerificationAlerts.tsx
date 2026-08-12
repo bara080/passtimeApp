@@ -1,4 +1,5 @@
 import { View, Text, Pressable } from "react-native";
+import { useRouter, type Href } from "expo-router";
 import { AlertTriangle, Info } from "lucide-react-native";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { useToast } from "@/context/ToastProvider";
@@ -13,6 +14,7 @@ export type VerificationAlertsProps = {
 export function VerificationAlerts({ verification }: VerificationAlertsProps) {
   const { palette, isDark } = useThemeColors();
   const toast = useToast();
+  const router = useRouter();
 
   const bg = isDark ? "#2f210f" : "#fff3ec";
   const border = "#ff9933";
@@ -45,7 +47,7 @@ export function VerificationAlerts({ verification }: VerificationAlertsProps) {
           border={border}
           fg={fg}
           muted={palette.textMuted}
-          onPress={() => toast.info("Coming soon", "Stripe payouts setup arrives shortly.")}
+          onPress={() => router.push("/(app)/host/stripe-onboarding" as unknown as Href)}
         />
       ) : null}
     </View>

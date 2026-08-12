@@ -7,6 +7,7 @@ import { ScreenHeader, AppButton } from "@/components/ui";
 import { PhotoGrid, type PhotoEntry } from "@/components/onboarding/PhotoGrid";
 import { mediaApi } from "@/services/media";
 import { useSaveHostOnboarding } from "@/services/host/hooks";
+import { useAuth } from "@/context/AuthProvider";
 import { useToast } from "@/context/ToastProvider";
 import { trackEvent, trackError } from "@/utils/analytics";
 
@@ -17,6 +18,7 @@ export default function HostPhotosRoute() {
   const router = useRouter();
   const toast = useToast();
   const save = useSaveHostOnboarding();
+  const { updateUser } = useAuth();
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [uploading, setUploading] = useState(false);
 
@@ -52,13 +54,18 @@ export default function HostPhotosRoute() {
     try {
       // Terminal step: "done" flips hostOnboardingComplete on the server.
       await save.mutateAsync({ photos, step: "done" });
+      // Sync local session so the route guard doesn't yank the host back into
+      // onboarding on the next navigation (it reads session.user, not the
+      // React Query cache that useSaveHostOnboarding invalidates).
+      await updateUser({ hostOnboardingComplete: true, hostOnboardingStep: "done" });
       router.replace({
         pathname: "/(auth)/success",
         params: {
           title: "Success",
           message: "Your business profile has been successfully created.",
           buttonLabel: "Go to Dashboard",
-          next: "/(app)",
+          // Host home is the dashboard tab, not the member "/(app)" index.
+          next: "/(app)/dashboard",
         },
       });
     } catch (err) {

@@ -11,7 +11,7 @@ const {
   getRefreshExpiryDate,
 } = require("../utils/jwt");
 const { createSession, deleteSession, deleteAllUserSessions } = require("../utils/redisSession");
-const { getRedis } = require("../config/redis");
+const { getRedis, isRedisReady } = require("../config/redis");
 const { success, created, error } = require("../utils/responseFormatter");
 const AppError = require("../utils/AppError");
 const { isValidEmail, validatePassword, validateName, validateDateOfBirth } = require("../utils/validators");
@@ -51,6 +51,11 @@ exports.registerUser = async (req, res, next) => {
 
     // Create Firebase user (best-effort — MongoDB is the auth source of truth)
     let uid = uuidv4();
+    // Track whether Firebase actually created the account so we can roll it
+    // back if the Mongo insert below fails. Without this, a partial success
+    // leaves an orphan Firebase user that blocks re-registration with 409.
+    // See /Users/bara080/bara/passtime/logout-idempotency.md P0#5.
+    let firebaseCreated = false;
     try {
       const firebaseUser = await admin.auth().createUser({
         email: email.toLowerCase().trim(),
@@ -58,6 +63,7 @@ exports.registerUser = async (req, res, next) => {
         displayName: firstName ? `${firstName} ${lastName || ""}`.trim() : undefined,
       });
       uid = firebaseUser.uid;
+      firebaseCreated = true;
     } catch (fbErr) {
       if (fbErr.code === "auth/email-already-exists") {
         return error(res, 409, "Email already registered.");
@@ -67,16 +73,33 @@ exports.registerUser = async (req, res, next) => {
     }
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const user = await UserModel.create({
-      uid,
-      email: email.toLowerCase().trim(),
-      password: passwordHash,
-      role,
-      firstName: firstName || "",
-      lastName: lastName || "",
-      displayName: firstName ? `${firstName} ${lastName || ""}`.trim() : "",
-      emailVerified: false,
-    });
+    let user;
+    try {
+      user = await UserModel.create({
+        uid,
+        email: email.toLowerCase().trim(),
+        password: passwordHash,
+        role,
+        firstName: firstName || "",
+        lastName: lastName || "",
+        displayName: firstName ? `${firstName} ${lastName || ""}`.trim() : "",
+        emailVerified: false,
+      });
+    } catch (mongoErr) {
+      // Rollback the Firebase user we just created — otherwise the account is
+      // "half real" (auth exists, profile doesn't) and every retry sees 409.
+      // Best-effort: log if rollback fails; the deleteUser call is safe to
+      // retry manually via the Firebase console.
+      if (firebaseCreated) {
+        try {
+          await admin.auth().deleteUser(uid);
+          console.warn("[register] rolled back Firebase user after Mongo failure:", uid);
+        } catch (rollbackErr) {
+          console.error("[register] rollback FAILED — orphan Firebase uid:", uid, rollbackErr.message);
+        }
+      }
+      throw mongoErr;
+    }
 
     const sessionId = uuidv4();
     await createSession({ sessionId, uid, role, deviceInfo });
@@ -183,14 +206,21 @@ exports.loginUser = async (req, res, next) => {
 };
 
 // ── Logout ────────────────────────────────────────────────────────────────────
+// Idempotent by design: whether the session exists or not, whether refresh
+// tokens are already revoked or not, the response is a plain 200. This kills
+// the 401 cascade we saw in logs when a client retried logout after the first
+// call already tore down the session. See logout-idempotency.md.
 exports.logoutUser = async (req, res, next) => {
   try {
+    // These calls are safe no-ops when the target rows don't exist — Redis DEL
+    // on a missing key returns 0, updateMany matches 0 docs. So a retry after
+    // successful logout still returns 200 and doesn't touch the auth gate.
     await deleteSession({ uid: req.user.uid, sessionId: req.sessionId });
 
     const RefreshModel = req.user.db.model("RefreshToken");
     await RefreshModel.updateMany({ uid: req.user.uid, revoked: false }, { revoked: true });
 
-    return success(res, "Logged out successfully.", {});
+    return success(res, "Logged out successfully.", { alreadyLoggedOut: !req.session });
   } catch (err) {
     next(err);
   }
@@ -215,8 +245,33 @@ exports.refreshToken = async (req, res, next) => {
     const UserModel = getUserModel(role);
     const RefreshModel = UserModel.db.model("RefreshToken");
 
-    const storedToken = await RefreshModel.findOne({ uid, token: rt, revoked: false });
-    if (!storedToken) return error(res, 401, "Refresh token revoked or not found.");
+    // Atomic claim — findOneAndDelete removes the row and returns it in ONE op,
+    // so exactly one of N concurrent refreshes with the same token wins. The old
+    // findOne()+deleteOne() let both readers proceed, delete, and mint tokens →
+    // the loser ended up 401'd holding a token it thought was valid.
+    // See /Users/bara080/bara/passtime/logout-idempotency.md ("refresh-token race").
+    // old: const storedToken = await RefreshModel.findOne({ uid, token: rt, revoked: false });
+    // old: if (!storedToken) return error(res, 401, "Refresh token revoked or not found.");
+    const rotKey = `refresh:rot:${rt}`;
+    const storedToken = await RefreshModel.findOneAndDelete({ uid, token: rt, revoked: false });
+
+    if (!storedToken) {
+      // We lost the race (or the token was already used). If the winner cached
+      // its freshly-minted pair, hand the SAME pair back so this client isn't
+      // spuriously logged out. Otherwise the token really is gone → 401.
+      if (isRedisReady()) {
+        try {
+          const cached = await getRedis().get(rotKey);
+          if (cached) {
+            const { accessToken, refreshToken } = JSON.parse(cached);
+            return success(res, "Token refreshed.", { accessToken, refreshToken });
+          }
+        } catch (redisErr) {
+          console.warn("[refreshToken] rotation cache read failed:", redisErr.message);
+        }
+      }
+      return error(res, 401, "Refresh token revoked or not found.");
+    }
 
     if (new Date() > storedToken.expiresAt) {
       return error(res, 401, "Refresh token expired.");
@@ -228,12 +283,26 @@ exports.refreshToken = async (req, res, next) => {
     const newAccessToken = generateAccessToken({ uid, role, sessionId: newSessionId });
     const newRefreshToken = generateRefreshToken({ uid, role, sessionId: newSessionId });
 
-    await storedToken.deleteOne();
+    // old: await storedToken.deleteOne();  // now deleted atomically above
     await RefreshModel.create({
       uid,
       token: newRefreshToken,
       expiresAt: getRefreshExpiryDate(),
     });
+
+    // Cache the new pair against the OLD token for a short window so a slow
+    // concurrent retry replays instead of 401ing. Best-effort; TTL 30s.
+    if (isRedisReady()) {
+      try {
+        await getRedis().set(
+          rotKey,
+          JSON.stringify({ accessToken: newAccessToken, refreshToken: newRefreshToken }),
+          { EX: 30 }
+        );
+      } catch (redisErr) {
+        console.warn("[refreshToken] rotation cache write failed:", redisErr.message);
+      }
+    }
 
     return success(res, "Token refreshed.", {
       accessToken: newAccessToken,
@@ -448,17 +517,28 @@ exports.socialLogin = async (req, res, next) => {
     if (!user) {
       const fullName = (decoded.name || "").trim();
       const [firstName, ...rest] = fullName.split(/\s+/);
-      user = await UserModel.create({
-        uid: decoded.uid,
-        email,
-        role,
-        firstName: firstName || "",
-        lastName: rest.join(" "),
-        displayName: fullName,
-        avatarUrl: decoded.picture || undefined,
-        emailVerified: Boolean(decoded.email_verified),
-        isSocialLogin: true,
-      });
+      // Upsert, not create: two first-time social logins for the same email can
+      // both fall through the findOne() above and race. `create` dup-keys the
+      // loser into a 500; `$setOnInsert` upsert makes the loser get the winner's
+      // freshly-inserted doc back instead. See logout-idempotency.md ("social race").
+      // old: user = await UserModel.create({ uid: decoded.uid, email, role, ... });
+      user = await UserModel.findOneAndUpdate(
+        { email },
+        {
+          $setOnInsert: {
+            uid: decoded.uid,
+            email,
+            role,
+            firstName: firstName || "",
+            lastName: rest.join(" "),
+            displayName: fullName,
+            avatarUrl: decoded.picture || undefined,
+            emailVerified: Boolean(decoded.email_verified),
+            isSocialLogin: true,
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
     } else if (decoded.email_verified && !user.emailVerified) {
       // Provider-verified email upgrades the flag on an existing account
       user.emailVerified = true;
@@ -524,6 +604,9 @@ exports.getMe = async (req, res, next) => {
       phoneVerified: user.phoneVerified,
       phoneNumber: user.phoneNumber,
       dateOfBirth: user.dateOfBirth,
+      currency: user.currency,
+      country: user.location?.country ?? null,
+      identityStatus: user.identity?.status ?? "unverified",
       ...(req.userRole === "host"
         ? {
             hostOnboardingStep: user.hostOnboardingStep ?? null,
@@ -539,8 +622,21 @@ exports.getMe = async (req, res, next) => {
 // ── Update Me ─────────────────────────────────────────────────────────────────
 exports.updateMe = async (req, res, next) => {
   try {
-    const { firstName, lastName, dateOfBirth, avatarUrl } = req.body;
+    const { firstName, lastName, dateOfBirth, avatarUrl, currency, country } = req.body;
     const updates = {};
+
+    // Preference fields (Country/Currency picker). Currency is a 3-letter ISO
+    // code; country is a display name (stored under location.country).
+    if (currency !== undefined) {
+      const c = String(currency).trim().toLowerCase();
+      if (!/^[a-z]{3}$/.test(c)) return error(res, 400, "currency must be a 3-letter ISO code.");
+      updates.currency = c;
+    }
+    if (country !== undefined) {
+      const co = String(country).trim();
+      if (co.length < 2 || co.length > 56) return error(res, 400, "country must be 2–56 characters.");
+      updates["location.country"] = co;
+    }
 
     if (firstName !== undefined) {
       const err1 = validateName(firstName, "firstName");
@@ -567,7 +663,7 @@ exports.updateMe = async (req, res, next) => {
       }
     }
     if (Object.keys(updates).length === 0) {
-      return error(res, 400, "Nothing to update. Allowed fields: firstName, lastName, dateOfBirth, avatarUrl.");
+      return error(res, 400, "Nothing to update. Allowed fields: firstName, lastName, dateOfBirth, avatarUrl, currency, country.");
     }
     if (updates.firstName || updates.lastName) {
       const first = updates.firstName ?? req.user.firstName ?? "";
@@ -591,6 +687,8 @@ exports.updateMe = async (req, res, next) => {
       phoneVerified: user.phoneVerified,
       phoneNumber: user.phoneNumber,
       dateOfBirth: user.dateOfBirth,
+      currency: user.currency,
+      country: user.location?.country ?? null,
     });
   } catch (err) {
     next(err);

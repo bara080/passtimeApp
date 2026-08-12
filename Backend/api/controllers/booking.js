@@ -198,6 +198,12 @@ exports.createBooking = async (req, res, next) => {
 
     return created(res, "Booking request sent.", { booking: booking.toObject() });
   } catch (err) {
+    // Unique-index race: two concurrent creates for the same host+startAt.
+    // Turn Mongo's 11000 into the same clean 409 the pre-check returns so the
+    // client sees one shape regardless of which layer caught it.
+    if (err && err.code === 11000) {
+      return error(res, 409, "That slot is no longer available.");
+    }
     next(err);
   }
 };
@@ -348,7 +354,15 @@ exports.cancel = async (req, res, next) => {
     if (!gate.ok) return error(res, gate.status, gate.message);
     if (gate.role === "host" && preview.status === "confirmed" && preview.paymentIntentId && stripe) {
       try {
-        await stripe.refunds.create({ payment_intent: preview.paymentIntentId, reason: "requested_by_customer" });
+        // Stripe-native idempotency on refund. Key is per-PaymentIntent, so a
+        // duplicate cancel from a burst can't fire a second refund attempt.
+        // See /Users/bara080/bara/passtime/logout-idempotency.md P0#2.
+        const refundIdemKey = `refund/${preview.paymentIntentId}`;
+        // old: await stripe.refunds.create({ payment_intent: preview.paymentIntentId, reason: "requested_by_customer" });
+        await stripe.refunds.create(
+          { payment_intent: preview.paymentIntentId, reason: "requested_by_customer" },
+          { idempotencyKey: refundIdemKey }
+        );
       } catch (refundErr) {
         console.error("[booking.cancel] refund failed:", refundErr.message);
       }
@@ -441,18 +455,29 @@ exports.pay = async (req, res, next) => {
     }
 
     const platformFee = Math.round((booking.total * PLATFORM_FEE_PERCENT) / 100);
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: booking.total,
-      currency: booking.currency || "usd",
-      payment_method_types: ["card"],
-      application_fee_amount: platformFee,
-      transfer_data: { destination: host.stripeAccountId },
-      metadata: {
-        bookingId: booking.bookingId,
-        memberUid: booking.memberUid,
-        hostUid: booking.hostUid,
+    // Stripe-native idempotency: identical request within 24h returns the SAME
+    // PaymentIntent instead of creating a new one. Key is deterministic per
+    // booking+total so accidental double-tap or lambda retry can never charge
+    // twice. See /Users/bara080/bara/passtime/logout-idempotency.md P0#1.
+    // FOLLOW-UP: if pay is ever partial-refunded and re-attempted, bump the
+    // suffix (e.g. `pay/<id>/<total>/v2`) so a fresh PI is created.
+    const stripeIdemKey = `pay/${booking.bookingId}/${booking.total}`;
+    // old: const paymentIntent = await stripe.paymentIntents.create({ ... });
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: booking.total,
+        currency: booking.currency || "usd",
+        payment_method_types: ["card"],
+        application_fee_amount: platformFee,
+        transfer_data: { destination: host.stripeAccountId },
+        metadata: {
+          bookingId: booking.bookingId,
+          memberUid: booking.memberUid,
+          hostUid: booking.hostUid,
+        },
       },
-    });
+      { idempotencyKey: stripeIdemKey }
+    );
 
     booking.paymentIntentId = paymentIntent.id;
     await booking.save();

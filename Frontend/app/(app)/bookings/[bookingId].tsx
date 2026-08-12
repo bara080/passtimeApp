@@ -14,6 +14,7 @@ import {
   usePayBooking,
 } from "@/services/bookings/hooks";
 import { useCreateChat } from "@/services/chat/hooks";
+import { useStripe } from "@stripe/stripe-react-native";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { useToast } from "@/context/ToastProvider";
 import { formatMoney } from "@/utils/bookingMoney";
@@ -45,9 +46,12 @@ export default function BookingDetailsScreen() {
   const cancel = useCancelBooking();
   const pay = usePayBooking();
   const createChat = useCreateChat();
+  // Native Stripe PaymentSheet. Provider + publishable key live in app/_layout.tsx.
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
   const [declineOpen, setDeclineOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
 
   if (details.isPending) {
     return (
@@ -78,6 +82,45 @@ export default function BookingDetailsScreen() {
       toast.success(successMessage);
     } catch (err) {
       toast.error("Could not update", err instanceof Error ? err.message : "Please try again.");
+    }
+  };
+
+  // Real in-app payment. Backend mints a Connect destination-charge PaymentIntent
+  // (platform account, application_fee + transfer_data) and returns its
+  // clientSecret; we present Stripe's native sheet against it. On success the
+  // Stripe webhook flips the booking to `confirmed` server-side, so we refetch.
+  // Card-only for now — Apple/Google Pay need native entitlements configured
+  // (merchantIdentifier is already set on the provider) before enabling here.
+  const handlePay = async () => {
+    if (paying) return; // belt-and-suspenders; pay service is already single-flighted
+    setPaying(true);
+    try {
+      const r = await pay.mutateAsync(booking.bookingId);
+
+      const init = await initPaymentSheet({
+        merchantDisplayName: "Passtime",
+        paymentIntentClientSecret: r.clientSecret,
+      });
+      if (init.error) {
+        toast.error("Payment setup failed", init.error.message);
+        return;
+      }
+
+      const { error: sheetError } = await presentPaymentSheet();
+      if (sheetError) {
+        // "Canceled" is the user dismissing the sheet — not an error worth a toast.
+        if (sheetError.code !== "Canceled") {
+          toast.error("Payment failed", sheetError.message);
+        }
+        return;
+      }
+
+      toast.success("Payment complete", "Your booking is confirmed.");
+      details.refetch();
+    } catch (err) {
+      toast.error("Could not start payment", err instanceof Error ? err.message : "Please try again.");
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -187,14 +230,8 @@ export default function BookingDetailsScreen() {
           onAccept={guarded(() => accept.mutateAsync(booking.bookingId), "Booking accepted")}
           onOpenDecline={() => setDeclineOpen(true)}
           onOpenCancel={() => setCancelOpen(true)}
-          onPay={guarded(async () => {
-            const r = await pay.mutateAsync(booking.bookingId);
-            // v1: Stripe checkout UI is deferred (see booking.md §5, needs
-            // stripe-react-native card sheet). Surface the client_secret via
-            // a toast so QA can complete payment in the dashboard.
-            toast.info("Ready to pay", `Client secret: ${r.clientSecret.slice(0, 12)}…`);
-          }, "Payment intent created")}
-          busy={accept.isPending || decline.isPending || cancel.isPending || pay.isPending}
+          onPay={handlePay}
+          busy={accept.isPending || decline.isPending || cancel.isPending || pay.isPending || paying}
         />
 
         <ReasonSheet

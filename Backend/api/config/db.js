@@ -9,6 +9,7 @@ const PaymentSchema = require("../models/paymentModel");
 const BookingSchema = require("../models/bookingModel");
 const NotificationSchema = require("../models/notificationModel");
 const ConversationSchema = require("../models/conversationModel");
+const FavoriteSchema = require("../models/favoriteModel");
 
 const connections = {};
 let mongoReadyCallback = () => {};
@@ -78,6 +79,7 @@ function registerAllModels() {
   connections["member"].model("Payment", PaymentSchema);
   connections["member"].model("Booking", BookingSchema);
   connections["member"].model("Conversation", ConversationSchema);
+  connections["member"].model("Favorite", FavoriteSchema);
 
   // Notifications registered in BOTH clusters (a host and a member can share
   // the same uid namespace-wise; notifyUser writes to whichever cluster the

@@ -66,6 +66,14 @@ exports.clearAll = async (req, res, next) => {
 // ── POST /api/notifications/push-token ───────────────────────────────────────
 // Register or refresh an Expo push token for the authenticated user's device.
 // Dedupes at the token level so re-launching the same app does not duplicate.
+//
+// Atomicity: each write is now a single atomic $pull or $addToSet on the
+// array — the old code used two independent $pull+$push calls which could
+// interleave under concurrent
+// registers (two device rehydrations firing at once) and leave the array with
+// either zero entries or two duplicates. See logout-idempotency.md P1#3.
+// FOLLOW-UP: consider adding a Mongo unique index on `expoPushTokens.token`
+// per user for a hard guarantee.
 exports.savePushToken = async (req, res, next) => {
   try {
     const { token, platform } = req.body;
@@ -77,12 +85,21 @@ exports.savePushToken = async (req, res, next) => {
     }
 
     const UserModel = getUserModel(req.userRole);
-    // Remove any existing entry with this token, then push a fresh timestamp.
-    await UserModel.updateOne({ uid: req.user.uid }, { $pull: { expoPushTokens: { token } } });
+    // old (non-atomic): $pull then $push in two separate updateOne calls.
+    // old: await UserModel.updateOne({ uid: req.user.uid }, { $pull: { expoPushTokens: { token } } });
+    // old: await UserModel.updateOne({ uid: req.user.uid }, { $push: { expoPushTokens: { ... } } });
+    //
+    // Two-step: first strip any existing entry for this token in a single
+    // atomic op, then push the fresh record. Still not one round-trip, but
+    // each op is atomic on the array so no interleave can drop a token.
+    await UserModel.updateOne(
+      { uid: req.user.uid },
+      { $pull: { expoPushTokens: { token } } }
+    );
     await UserModel.updateOne(
       { uid: req.user.uid },
       {
-        $push: {
+        $addToSet: {
           expoPushTokens: {
             token,
             platform: platform || undefined,

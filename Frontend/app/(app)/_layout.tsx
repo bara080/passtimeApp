@@ -43,6 +43,9 @@ export default function AppLayout() {
       <Tabs.Screen name="book/summary" options={{ href: null }} />
       <Tabs.Screen name="chat/[chatId]" options={{ href: null }} />
       <Tabs.Screen name="host/stripe-onboarding" options={{ href: null }} />
+      <Tabs.Screen name="transactions" options={{ href: null }} />
+      <Tabs.Screen name="transactions/[paymentId]" options={{ href: null }} />
+      <Tabs.Screen name="identity-verification" options={{ href: null }} />
     </Tabs>
   );
 }

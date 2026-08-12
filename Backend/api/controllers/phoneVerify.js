@@ -6,8 +6,16 @@ const { getUserModel } = require("../config/db");
 const { getSession } = require("../utils/redisSession");
 const { normalizePhone } = require("../utils/normalizePhone");
 const { telnyxClient, verifyProfileId } = require("../config/telnyx");
+const { getRedis, isRedisReady } = require("../config/redis");
 
 const OTP_DIGITS = 5;
+
+// SMS cost guard — the same phone number can only trigger a Telnyx send once
+// per SEND_COOLDOWN_SECONDS. Rate limiter already caps 5/10min per IP; this
+// covers the tighter "double-tap resend" case that a limiter's window misses.
+// See /Users/bara080/bara/passtime/logout-idempotency.md P0#4.
+// FOLLOW-UP: bump if UX shows a countdown longer than this.
+const SEND_COOLDOWN_SECONDS = 60;
 
 function generateCode() {
   const max = 10 ** OTP_DIGITS;
@@ -28,6 +36,26 @@ exports.sendOtp = async (req, res, next) => {
 
     const trimmed = String(phoneNumber).trim();
 
+    // Cost cutoff — if we already sent to this number seconds ago, no-op.
+    // Client sees the same success shape; Telnyx bill stays flat under bursts.
+    // Redis-degraded fallback: we skip the check and let the rate limiter handle it.
+    if (isRedisReady()) {
+      const key = `otp:sent:${trimmed}`;
+      try {
+        const cached = await getRedis().get(key);
+        if (cached) {
+          const { requestId, telnyxStatus } = JSON.parse(cached);
+          return success(res, "OTP already sent — please wait for it to arrive.", {
+            requestId,
+            telnyxStatus,
+            replay: true,
+          });
+        }
+      } catch (redisErr) {
+        console.warn("[sendOtp] cache read failed:", redisErr.message);
+      }
+    }
+
     const createResp = await telnyxClient.verifications.triggerSMS({
       phone_number: trimmed,
       verify_profile_id: verifyProfileId,
@@ -40,6 +68,21 @@ exports.sendOtp = async (req, res, next) => {
       return error(res, 503, "Failed to send OTP. Please try again.", {
         telnyxStatus: data?.status,
       });
+    }
+
+    // Persist the "sent" state so a retry within cooldown replays instead of
+    // firing another SMS. TTL == cooldown; expires naturally.
+    if (isRedisReady()) {
+      const key = `otp:sent:${trimmed}`;
+      try {
+        await getRedis().set(
+          key,
+          JSON.stringify({ requestId: data.id, telnyxStatus: data.status }),
+          { EX: SEND_COOLDOWN_SECONDS }
+        );
+      } catch (redisErr) {
+        console.warn("[sendOtp] cache write failed:", redisErr.message);
+      }
     }
 
     return success(res, "OTP sent.", {

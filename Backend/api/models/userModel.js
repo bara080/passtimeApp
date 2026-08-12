@@ -31,6 +31,33 @@ const userSchema = new mongoose.Schema(
     },
     professionalRole: { type: String, trim: true },
     photos: [{ path: String, url: String }],
+    // Stripe Connect (host). Defined so the onboarding write of `stripeAccountId`
+    // and the `account.updated` webhook's `stripe.*` flags actually persist —
+    // strict mode was silently dropping them before these fields existed.
+    stripeAccountId: { type: String },
+    stripe: {
+      chargesEnabled: { type: Boolean, default: false },
+      payoutsEnabled: { type: Boolean, default: false },
+      detailsSubmitted: { type: Boolean, default: false },
+      payoutReady: { type: Boolean, default: false },
+    },
+    // Identity (KYC) verification status. `pending` = submitted, awaiting review.
+    identity: {
+      status: {
+        type: String,
+        enum: ["unverified", "pending", "verified", "rejected"],
+        default: "unverified",
+      },
+      documentType: { type: String, enum: ["passport", "drivers_license", "national_id"] },
+      documents: {
+        front: { type: String }, // https URLs from the media pipeline
+        back: { type: String },
+        selfie: { type: String },
+      },
+      submittedAt: { type: Date },
+      reviewedAt: { type: Date },
+      rejectionReason: { type: String },
+    },
     availability: {
       weekly: [
         {

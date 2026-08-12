@@ -74,4 +74,23 @@ bookingSchema.index({ memberUid: 1, status: 1 });
 bookingSchema.index({ hostUid: 1, status: 1 });
 bookingSchema.index({ hostUid: 1, startAt: 1 }); // slot-conflict lookups
 
+// Double-booking guard — a host cannot have two live bookings starting at the
+// same instant. Partial filter excludes cancelled/declined/expired so a member
+// can rebook a slot that was previously released. Complements the read-then-
+// write conflict check in booking.createBooking (that check races under
+// concurrent creates; this index is the last line of defense).
+// See /Users/bara080/bara/passtime/logout-idempotency.md P0#3.
+// FOLLOW-UP: if prod already contains two live bookings for the same slot,
+// this index build will fail — run a pre-migration report first.
+bookingSchema.index(
+  { hostUid: 1, startAt: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      status: { $in: ["pending", "accepted", "confirmed", "active"] },
+    },
+    name: "unique_live_booking_per_host_startAt",
+  }
+);
+
 module.exports = bookingSchema;

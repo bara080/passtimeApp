@@ -5,8 +5,17 @@ const { success, created, error } = require("../utils/responseFormatter");
 const { assertChatParticipant } = require("../utils/chatParticipant");
 const { notifyUser } = require("../utils/notifyUser");
 
+const { getRedis, isRedisReady } = require("../config/redis");
+
 const MESSAGE_MAX = 1000;
 const HISTORY_LIMIT = 200;
+
+// Server-side dedupe window for messages. Client generates a deterministic
+// `${uid}_${ts}` messageId; if it retries within this window we short-circuit
+// and don't refire the push notification. See logout-idempotency.md P1#2.
+// FOLLOW-UP: move to Redis SETNX for stricter "first writer wins" semantics
+// under concurrent retries; current GET/SET is best-effort dedup.
+const MESSAGE_DEDUP_SECONDS = 30;
 
 /** RTDB reference for a chat, or null when the database URL isn't configured. */
 function rtdbChat(chatId) {
@@ -178,7 +187,31 @@ exports.sendMessage = async (req, res, next) => {
 
     const now = new Date();
     const timestamp = now.getTime();
-    const messageId = `${req.user.uid}_${timestamp}`;
+    // Accept a client-supplied messageId so retries collapse to one write.
+    // The client already generates `${uid}_${originalTs}` for optimistic UI;
+    // sending it along makes the server dedup on the exact same key. If the
+    // client doesn't send one we fall back to the server timestamp — safe but
+    // won't dedup across retries. FOLLOW-UP: make body.messageId required.
+    const clientMessageId = typeof req.body?.messageId === "string" ? req.body.messageId.trim() : "";
+    const messageId = clientMessageId && /^[A-Za-z0-9_-]{6,128}$/.test(clientMessageId)
+      ? clientMessageId
+      : `${req.user.uid}_${timestamp}`;
+
+    // Short-circuit on replay — same messageId inside the dedup window means
+    // the RTDB write and the push notification already went out. Return the
+    // same success shape so the client's optimistic UI stays consistent.
+    if (isRedisReady()) {
+      const dedupKey = `msg:sent:${chat.chatId}:${messageId}`;
+      try {
+        const cached = await getRedis().get(dedupKey);
+        if (cached) {
+          return success(res, "OK", { chat: chat.toObject(), messageId, replay: true });
+        }
+        await getRedis().set(dedupKey, "1", { EX: MESSAGE_DEDUP_SECONDS });
+      } catch (redisErr) {
+        console.warn("[chat.send] dedup cache failed:", redisErr.message);
+      }
+    }
     const senderName =
       gate.role === "member"
         ? req.user.displayName || req.user.firstName || "Member"

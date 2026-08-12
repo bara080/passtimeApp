@@ -26,6 +26,7 @@ import { useToast } from "@/context/ToastProvider";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { useHostDashboard } from "@/services/hostDashboard/hooks";
 import { useMyBookings } from "@/services/bookings/hooks";
+import { useFavorites } from "@/services/favorites/hooks";
 import {
   HostProfileCover,
   HostProfileStats,
@@ -136,27 +137,25 @@ function HostProfileScreen() {
           <ProfileRow
             Icon={ClipboardList}
             label="Bookings history"
-            onPress={soon("Coming soon", "Bookings history arrives in a follow-up build.")}
+            onPress={() => router.push("/(app)/bookings" as unknown as Href)}
           />
           <Divider />
           <ProfileRow
             Icon={Receipt}
             label="Transactions history"
-            onPress={soon("Coming soon", "Transactions ledger arrives with payouts.")}
+            onPress={() => router.push("/(app)/transactions" as unknown as Href)}
           />
           <Divider />
           <ProfileRow
             Icon={ShieldCheck}
             label="Identity verification"
-            badge="coming_soon"
-            onPress={soon("Coming soon", "ID document verification arrives shortly.")}
+            onPress={() => router.push("/(app)/identity-verification" as unknown as Href)}
           />
           <Divider />
           <ProfileRow
             Icon={Landmark}
             label="Bank accounts"
-            badge="coming_soon"
-            onPress={soon("Coming soon", "Stripe payouts setup arrives shortly.")}
+            onPress={() => router.push("/(app)/host/stripe-onboarding" as unknown as Href)}
           />
           <Divider />
           <ProfileRow
@@ -186,7 +185,7 @@ function HostProfileScreen() {
           />
         </ProfileSection>
 
-        <HostProfilePreferences country="United States" currency="USD" />
+        <HostProfilePreferences />
 
         <ProfileSection title="Account">
           <ProfileRow Icon={LogOut} label="Sign Out" destructive onPress={signOut} />
@@ -217,6 +216,7 @@ function MemberProfileScreen() {
 
   const upcoming = useMyBookings("upcoming");
   const past = useMyBookings("past");
+  const favorites = useFavorites();
 
   const displayName =
     user?.displayName || `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Member";
@@ -275,7 +275,7 @@ function MemberProfileScreen() {
         <MemberProfileStats
           upcoming={upcoming.data?.length ?? 0}
           completed={past.data?.length ?? 0}
-          favorites={0}
+          favorites={favorites.data?.count ?? 0}
         />
 
         <ProfileSection title="General">
@@ -298,17 +298,22 @@ function MemberProfileScreen() {
           />
           <Divider />
           <ProfileRow
+            Icon={Receipt}
+            label="Transactions"
+            onPress={() => router.push("/(app)/transactions" as unknown as Href)}
+          />
+          <Divider />
+          <ProfileRow
             Icon={CreditCard}
             label="Payment methods"
             badge="coming_soon"
-            onPress={soon("Coming soon", "Saved cards and payout preferences arrive shortly.")}
+            onPress={soon("Coming soon", "Cards are entered securely at checkout. Saved cards arrive soon.")}
           />
           <Divider />
           <ProfileRow
             Icon={ShieldCheck}
             label="Identity verification"
-            badge="coming_soon"
-            onPress={soon("Coming soon", "ID document verification arrives shortly.")}
+            onPress={() => router.push("/(app)/identity-verification" as unknown as Href)}
           />
           <Divider />
           <ProfileRow
@@ -338,7 +343,7 @@ function MemberProfileScreen() {
           />
         </ProfileSection>
 
-        <HostProfilePreferences country="United States" currency="USD" />
+        <HostProfilePreferences />
 
         <ProfileSection title="Account">
           <ProfileRow Icon={LogOut} label="Sign Out" destructive onPress={signOut} />

@@ -5,6 +5,7 @@ import {
   clearTokensAndLogout,
 } from "./tokenManager";
 import { getFromSecureStore, SECURE_STORE_KEYS } from "./secureStore";
+import { needsIdempotencyKey, newIdempotencyKey } from "./idempotency";
 
 export const APP_BASE_URL = (process.env.EXPO_PUBLIC_APP_BASE_URL ?? "").replace(/\/$/, "");
 export const API_BASE_URL = `${APP_BASE_URL}/api`;
@@ -53,6 +54,20 @@ axiosInstance.interceptors.request.use(async (config) => {
   if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Idempotency-Key injection. Auto-generated for whitelisted POST routes so
+  // callers get server-side dedup for free. If the caller already set a key
+  // (e.g. to dedupe across separate user actions), respect it. The same key
+  // is reused across our own retries (XHR fallback below, axios auto-retry)
+  // because axios preserves the config object across attempts.
+  // See /Users/bara080/bara/passtime/logout-idempotency.md.
+  if (
+    needsIdempotencyKey(config.method, config.url, API_BASE_URL) &&
+    !config.headers["Idempotency-Key"]
+  ) {
+    config.headers["Idempotency-Key"] = newIdempotencyKey();
+  }
+
   return config;
 });
 

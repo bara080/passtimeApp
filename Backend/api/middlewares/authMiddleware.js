@@ -12,7 +12,25 @@ function normalizeRole(r) {
   return ALLOWED_ROLES.includes(s) ? s : null;
 }
 
+/**
+ * Factory that returns a JWT verifier.
+ * @param {object}  [opts]
+ * @param {boolean} [opts.allowMissingSession=false]  When true, a valid JWT
+ *   whose session is no longer in Redis is treated as authenticated (used by
+ *   /logout so retries after a successful revoke still get 200 instead of a
+ *   401 cascade). See logout-idempotency.md.
+ */
+function buildVerifier({ allowMissingSession = false } = {}) {
+  return async function verify(req, res, next) {
+    return runVerify(req, res, next, { allowMissingSession });
+  };
+}
+
 const verifyJWT = async (req, res, next) => {
+  return runVerify(req, res, next, { allowMissingSession: false });
+};
+
+async function runVerify(req, res, next, { allowMissingSession }) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -38,8 +56,14 @@ const verifyJWT = async (req, res, next) => {
     let session = null;
     if (isRedisReady()) {
       session = await getSession(sessionId);
-      if (!session) return error(res, 401, "Session expired or revoked.");
-      if (String(session.uid ?? "").trim() !== uid) return error(res, 401, "Invalid session.");
+      if (!session) {
+        // allowMissingSession is opt-in per-route (currently only /logout).
+        // JWT signature already proved authorship; the session lookup just
+        // confirms it hasn't been revoked. For a logout retry we don't care.
+        if (!allowMissingSession) return error(res, 401, "Session expired or revoked.");
+      } else if (String(session.uid ?? "").trim() !== uid) {
+        return error(res, 401, "Invalid session.");
+      }
     } else {
       console.warn(`⚠️ auth: Redis unavailable — JWT-only trust for uid=${uid}`);
     }
@@ -65,4 +89,9 @@ const verifyJWT = async (req, res, next) => {
   }
 };
 
+// Default export stays a plain middleware for backwards-compat with existing
+// `require("../middlewares/authMiddleware")` usage. New named exports let
+// specific routes opt into softer behavior (logout).
 module.exports = verifyJWT;
+module.exports.verifyJWT = verifyJWT;
+module.exports.buildVerifier = buildVerifier;

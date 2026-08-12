@@ -14,6 +14,11 @@ export type AuthUser = {
   dateOfBirth?: string;
   hostOnboardingStep?: string | null;
   hostOnboardingComplete?: boolean;
+  /** 3-letter ISO currency code, e.g. "usd". */
+  currency?: string;
+  /** Display country name, e.g. "United States". */
+  country?: string | null;
+  identityStatus?: "unverified" | "pending" | "verified" | "rejected";
 };
 
 export type LoginPayload = {
@@ -50,6 +55,10 @@ export type UpdateProfilePayload = {
   dateOfBirth?: string;
   /** Public https URL from the media pipeline. Null clears the avatar. */
   avatarUrl?: string | null;
+  /** 3-letter ISO currency code, e.g. "usd". */
+  currency?: string;
+  /** Display country name, e.g. "United States". */
+  country?: string;
 };
 
 export type SocialLoginPayload = {

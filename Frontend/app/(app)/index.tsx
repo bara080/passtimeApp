@@ -13,6 +13,7 @@ import {
   UpcomingBookingCard,
 } from "@/components/home";
 import { useDiscoverHosts } from "@/services/hosts/hooks";
+import { useFavoriteIds, useToggleFavorite } from "@/services/favorites/hooks";
 import { useMyBookings } from "@/services/bookings/hooks";
 import { useCreateChat } from "@/services/chat/hooks";
 import type { HostCard } from "@/services/hosts/types";
@@ -53,6 +54,12 @@ export default function HomeScreen() {
     { enabled: Boolean(memberCity) }
   );
   const [recentUids, setRecentUids] = useState<string[]>([]);
+
+  // Favorites: heart overlay on discovery cards, backed by the /favorites API.
+  const { ids: favoriteIds } = useFavoriteIds();
+  const toggleFavorite = useToggleFavorite();
+  const onToggleFavorite = (host: HostCard) =>
+    toggleFavorite.mutate({ hostUid: host.uid, favorited: favoriteIds.has(host.uid) });
 
   useEffect(() => {
     trackEvent("home.viewed");
@@ -159,6 +166,8 @@ export default function HomeScreen() {
           hosts={recommended.data}
           loading={recommended.isPending}
           onPressHost={(h) => openHost(h, "recommended")}
+          favoriteIds={favoriteIds}
+          onToggleFavorite={onToggleFavorite}
         />
 
         {memberCity ? (
@@ -168,6 +177,8 @@ export default function HomeScreen() {
               hosts={nearby.data}
               loading={nearby.isPending}
               onPressHost={(h) => openHost(h, "nearby")}
+              favoriteIds={favoriteIds}
+              onToggleFavorite={onToggleFavorite}
             />
           </>
         ) : null}
@@ -179,6 +190,8 @@ export default function HomeScreen() {
               hosts={recentlyViewedHosts}
               loading={false}
               onPressHost={(h) => openHost(h, "recent")}
+              favoriteIds={favoriteIds}
+              onToggleFavorite={onToggleFavorite}
             />
           </>
         ) : null}

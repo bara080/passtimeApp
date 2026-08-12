@@ -195,14 +195,18 @@ exports.getDashboard = async (req, res, next) => {
       req.user.hostOnboardingComplete
     );
 
-    // Bank verification (v1): we do NOT hit Stripe here — dashboard load is
-    // hot-path and a Stripe accounts.retrieve blows through the budget.
-    // Instead we surface `pending` and the client renders a "Bank setup
-    // coming soon" placeholder that will tap into the real Connect flow later.
-    // Once we're ready, flip this to `payouts_enabled && charges_enabled` via
-    // a cached `stripePayoutsEnabled` bool on the host doc (webhook-driven).
-    const bankVerified = false; // always pending in v1
-    const bankStatus = "coming_soon"; // client renders placeholder, not a warning
+    // Bank verification — read the cached Connect flags off the host doc (kept
+    // fresh by the account.updated webhook). No Stripe call on this hot path.
+    //  · payoutReady            → verified
+    //  · has a Connect account  → pending (onboarding started, not yet enabled)
+    //  · otherwise              → not_started (never onboarded)
+    const stripeState = req.user.stripe || {};
+    const bankVerified = Boolean(stripeState.payoutReady);
+    const bankStatus = bankVerified
+      ? "verified"
+      : req.user.stripeAccountId
+        ? "pending"
+        : "not_started";
 
     // Convenience for the profile screen — first onboarding photo, so the
     // client can fall back to it when the user hasn't picked a distinct avatar.

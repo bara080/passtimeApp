@@ -15,6 +15,9 @@ const hostRoutes = require("./routes/hostRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const favoritesRoutes = require("./routes/favoritesRoutes");
+const paymentsRoutes = require("./routes/paymentsRoutes");
+const identityRoutes = require("./routes/identityRoutes");
 
 const app = express();
 
@@ -222,6 +225,9 @@ app.use("/api/host", hostRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/chats", chatRoutes);
+app.use("/api/favorites", favoritesRoutes);
+app.use("/api/payments", paymentsRoutes);
+app.use("/api/identity", identityRoutes);
 
 // ── Sentry error handler ─────────────────────────────────────────────────────
 Sentry.setupExpressErrorHandler(app);

@@ -1,4 +1,5 @@
 import { axiosInstance } from "@/utils/httpClient";
+import { withSingleFlight } from "@/utils/singleFlight";
 import type { FeedResponse, SavePushTokenPayload } from "./types";
 
 function unwrap<T>(res: { data: { status: number; message: string; data: T } }): T {
@@ -14,8 +15,11 @@ export const notificationsApi = {
     unwrap(await axiosInstance.patch("/notifications/read-all")),
   clearAll: async (): Promise<{ deleted: number }> =>
     unwrap(await axiosInstance.delete("/notifications/clear-all")),
+  // Keyed by token: two device rehydrations firing at once collapse to one
+  // write, backing the server's $addToSet atomicity with client-side dedup.
   savePushToken: async (payload: SavePushTokenPayload): Promise<{ saved: boolean }> =>
-    unwrap(await axiosInstance.post("/notifications/push-token", payload)),
+    withSingleFlight(`push-token:${payload.token}`, async () =>
+      unwrap(await axiosInstance.post("/notifications/push-token", payload))),
 };
 
 export * from "./types";

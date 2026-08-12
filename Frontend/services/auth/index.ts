@@ -1,4 +1,5 @@
 import { axiosInstance, refreshAxiosInstance, API_BASE_URL } from "@/utils/httpClient";
+import { withSingleFlight } from "@/utils/singleFlight";
 import type {
   AuthResponse,
   LoginPayload,
@@ -15,19 +16,26 @@ function unwrap<T>(res: { data: { status: number; message: string; data: T } }):
 }
 
 export const authApi = {
-  register: async (payload: RegisterPayload): Promise<AuthResponse> => {
-    const res = await axiosInstance.post("/auth/register", payload);
-    return unwrap(res);
-  },
+  // Single-flight: a double-tapped submit shares one in-flight request instead
+  // of racing two registrations. Keyed by email so distinct users don't collide.
+  register: async (payload: RegisterPayload): Promise<AuthResponse> =>
+    withSingleFlight(`register:${payload.email.toLowerCase()}`, async () => {
+      const res = await axiosInstance.post("/auth/register", payload);
+      return unwrap(res);
+    }),
 
-  login: async (payload: LoginPayload): Promise<AuthResponse> => {
-    const res = await axiosInstance.post("/auth/login", payload);
-    return unwrap(res);
-  },
+  login: async (payload: LoginPayload): Promise<AuthResponse> =>
+    withSingleFlight(`login:${payload.email.toLowerCase()}:${payload.role}`, async () => {
+      const res = await axiosInstance.post("/auth/login", payload);
+      return unwrap(res);
+    }),
 
-  logout: async (): Promise<void> => {
-    await axiosInstance.post("/auth/logout");
-  },
+  // Single global key — the 401-cascade case from logout-idempotency.md. A burst
+  // of logout taps collapses to one request; server treats it as idempotent 200.
+  logout: async (): Promise<void> =>
+    withSingleFlight("logout", async () => {
+      await axiosInstance.post("/auth/logout");
+    }),
 
   refreshToken: async (refreshToken: string): Promise<RefreshResponse> => {
     const res = await refreshAxiosInstance.post("/auth/refresh-token", { refreshToken });
@@ -57,8 +65,9 @@ export const authApi = {
     return unwrap(res);
   },
 
-  socialLogin: async (payload: SocialLoginPayload): Promise<AuthResponse> => {
-    const res = await axiosInstance.post("/auth/social", payload);
-    return unwrap(res);
-  },
+  socialLogin: async (payload: SocialLoginPayload): Promise<AuthResponse> =>
+    withSingleFlight(`social:${payload.provider}:${payload.role}`, async () => {
+      const res = await axiosInstance.post("/auth/social", payload);
+      return unwrap(res);
+    }),
 };

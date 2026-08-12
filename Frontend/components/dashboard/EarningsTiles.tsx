@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from "react-native";
+import { useRouter, type Href } from "expo-router";
 import { useThemeColors } from "@/hooks/useThemeColors";
-import { useToast } from "@/context/ToastProvider";
 import type { DashboardEarnings } from "@/services/hostDashboard/types";
 
 function money(cents: number): string {
@@ -14,7 +14,7 @@ export type EarningsTilesProps = {
 /** Three tile row: Today / This Week / This Month + "View Transactions" link. */
 export function EarningsTiles({ earnings }: EarningsTilesProps) {
   const { palette, isDark } = useThemeColors();
-  const toast = useToast();
+  const router = useRouter();
 
   return (
     <View className="mb-6">
@@ -23,7 +23,7 @@ export function EarningsTiles({ earnings }: EarningsTilesProps) {
           Earnings
         </Text>
         <Pressable
-          onPress={() => toast.info("Coming soon", "Transaction history is on the roadmap.")}
+          onPress={() => router.push("/(app)/transactions" as unknown as Href)}
           hitSlop={8}
         >
           <Text className="text-[13px] font-semibold" style={{ color: palette.accent }}>

@@ -16,6 +16,10 @@ const {
 const { sendOtp, verifyOtp } = require("../controllers/phoneVerify");
 const { sendVerificationEmail, verifyEmailCode, verifyEmailToken } = require("../controllers/emailVerify");
 const verifyJWT = require("../middlewares/authMiddleware");
+// Soft verifier for /logout — accepts a valid JWT whose Redis session was
+// already torn down by a prior successful logout. See logout-idempotency.md.
+const { buildVerifier } = require("../middlewares/authMiddleware");
+const verifyJWTForLogout = buildVerifier({ allowMissingSession: true });
 const { otpSendLimiter, otpVerifyLimiter, forgotPasswordLimiter, loginLimiter, registerLimiter, resetPasswordLimiter } = require("../middlewares/rateLimiter");
 
 // Public
@@ -37,7 +41,8 @@ router.post("/verify-email-code", otpVerifyLimiter, verifyEmailCode);
 router.get("/verify-email-token", verifyEmailToken);
 
 // Protected
-router.post("/logout", verifyJWT, logoutUser);
+// old: router.post("/logout", verifyJWT, logoutUser);
+router.post("/logout", verifyJWTForLogout, logoutUser);
 router.get("/me", verifyJWT, getMe);
 router.patch("/me", verifyJWT, updateMe);
 router.delete("/me", verifyJWT, deleteMe);
