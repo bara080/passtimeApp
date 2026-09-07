@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, ScrollView, ActivityIndicator, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Calendar, Clock, MapPin, User, HelpCircle } from "lucide-react-native";
 import { ScreenHeader, AppButton } from "@/components/ui";
 import { SummaryLineItem } from "@/components/booking";
@@ -39,6 +40,7 @@ export default function BookingDetailsScreen() {
   const router = useRouter();
   const toast = useToast();
   const alertModal = useAlertModal();
+  const queryClient = useQueryClient();
   const { palette } = useThemeColors();
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
 
@@ -117,6 +119,15 @@ export default function BookingDetailsScreen() {
         return;
       }
 
+      // Optimistically reflect Paid/Confirmed immediately — the PaymentSheet
+      // succeeded so the charge is done; the async webhook + the details poll
+      // reconcile the authoritative status. Flips "Pay now" → paid right away
+      // instead of waiting on the webhook race (performance.md #8).
+      queryClient.setQueryData(
+        ["bookings", "details", booking.bookingId],
+        (old: { booking?: { status?: string } } | undefined) =>
+          old?.booking ? { ...old, booking: { ...old.booking, status: "confirmed" } } : old
+      );
       toast.success("Payment complete", "Your booking is confirmed.");
       details.refetch();
     } catch (err) {

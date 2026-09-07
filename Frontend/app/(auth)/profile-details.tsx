@@ -84,7 +84,7 @@ export default function ProfileDetailsScreen() {
   };
 
   return (
-    <AuthScreen showBack={false}>
+    <AuthScreen showBack>
       <AuthTitle title="Profile details" />
 
       <View className="flex-1 justify-center">

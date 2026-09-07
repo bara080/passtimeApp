@@ -24,6 +24,9 @@ export function DateRail({ dates, value, onChange }: DateRailProps) {
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ gap: 20, paddingRight: 21 }}
+      // flexGrow:0 stops this horizontal ScrollView from expanding to fill the
+      // parent's height (which pushed the slot list far down). (performance.md #4)
+      style={{ flexGrow: 0 }}
       className="mb-4"
     >
       {dates.map((iso) => {

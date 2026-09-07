@@ -47,6 +47,14 @@ export function useBookingDetails(bookingId: string | null) {
     queryFn: () => bookingsApi.details(bookingId!),
     enabled: Boolean(bookingId),
     staleTime: STALE_MS,
+    // Poll while the booking can still change on the other side (host Accept, or
+    // the async Stripe payment webhook flipping accepted → confirmed) so the
+    // screen updates Accept→Pay→Paid live without the user leaving it. Stops once
+    // the status is terminal. (performance.md #5, #8)
+    refetchInterval: (q) => {
+      const status = q.state.data?.booking?.status;
+      return status === "pending" || status === "accepted" ? 4000 : false;
+    },
   });
 }
 

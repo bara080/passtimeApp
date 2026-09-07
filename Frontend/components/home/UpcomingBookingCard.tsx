@@ -67,14 +67,21 @@ export function UpcomingBookingCard({ booking, onView, onChat, active }: Upcomin
           </View>
         </View>
       </View>
-      <View className="flex-row gap-2">
-        <View className="flex-1">
-          <AppButton label="View" onPress={onView} variant="secondary" />
+      {/* Chat only unlocks once the booking is confirmed (paid) — the backend
+          returns 409 otherwise. Pre-payment we show a full-width "View" so the
+          member never taps a dead Chat button. (performance.md) */}
+      {["confirmed", "active", "completed"].includes(booking.status) ? (
+        <View className="flex-row gap-2">
+          <View className="flex-1">
+            <AppButton label="View" onPress={onView} variant="secondary" />
+          </View>
+          <View className="flex-1">
+            <GradientButton label="Chat" onPress={onChat} />
+          </View>
         </View>
-        <View className="flex-1">
-          <GradientButton label="Chat" onPress={onChat} />
-        </View>
-      </View>
+      ) : (
+        <AppButton label="View" onPress={onView} variant="secondary" />
+      )}
     </Pressable>
   );
 }
