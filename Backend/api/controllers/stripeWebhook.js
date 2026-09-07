@@ -4,6 +4,7 @@ const { getConnection } = require("../config/db");
 const { getUserModel } = require("../config/db");
 const { canTransition } = require("../utils/bookingStateMachine");
 const { notifyUser } = require("../utils/notifyUser");
+const { sendEmail } = require("../config/resend");
 
 function log(level, event, meta = {}) {
   console[level === "error" ? "error" : level === "warn" ? "warn" : "log"](
@@ -112,6 +113,10 @@ async function handlePaymentSucceeded(paymentIntent) {
           type: "payment_success",
           data: { bookingId },
         }).catch((e) => console.error("[webhook.notify member] failed:", e.message));
+
+        // Email the member a payment receipt via Resend. Fire-and-forget: a mail
+        // failure must never fail the webhook (booking is already confirmed).
+        void sendMemberReceipt(booking, id);
       } else {
         // Idempotent replay or race — informational only.
         log("log", "booking.pay.noop", { bookingId, status: booking.status, reason: decision.message });
@@ -125,6 +130,57 @@ async function handlePaymentSucceeded(paymentIntent) {
     hostUid: metadata?.hostUid,
     bookingId,
   });
+}
+
+// ── Member payment receipt (Resend) ──────────────────────────────────────────
+// Sent on payment_intent.succeeded once the booking is confirmed. Idempotency-
+// keyed on the PaymentIntent so a replayed webhook can't send a duplicate.
+async function sendMemberReceipt(booking, paymentIntentId) {
+  try {
+    const MemberModel = getUserModel("member");
+    const member = await MemberModel.findOne({ uid: booking.memberUid }).select("email firstName");
+    if (!member?.email) {
+      log("warn", "receipt.email.skipped", { bookingId: booking.bookingId, reason: "no member email" });
+      return;
+    }
+    const money = (c) => `$${((Number(c) || 0) / 100).toFixed(2)}`;
+    const when = new Date(booking.startAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
+    const hostName = booking.hostSnapshot?.displayName || "your host";
+    const row = (label, value, bold) =>
+      `<tr><td style="padding:6px 0;color:#555;${bold ? "font-weight:700;color:#111;" : ""}">${label}</td>` +
+      `<td style="padding:6px 0;text-align:right;color:#111;${bold ? "font-weight:700;" : ""}">${value}</td></tr>`;
+    const html = `
+      <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:24px;">
+        <h2 style="margin:0 0 4px;color:#ff6633;">Payment receipt</h2>
+        <p style="color:#555;margin:0 0 20px;">Hi ${member.firstName || "there"}, your booking is confirmed. Here's your receipt.</p>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+          ${row("Host", hostName)}
+          ${row("When", when)}
+          ${row("Duration", `${booking.durationMinutes} min`)}
+          ${booking.venue?.name ? row("Where", booking.venue.name) : ""}
+        </table>
+        <hr style="border:none;border-top:1px solid #eee;"/>
+        <table style="width:100%;border-collapse:collapse;margin-top:8px;">
+          ${row("Hourly rate", money(booking.hourlyRateSnapshot))}
+          ${row("Subtotal", money(booking.subtotal))}
+          ${row("Fees", money(booking.serviceFee))}
+          ${row("Taxes", money(booking.tax))}
+          ${booking.discount > 0 ? row("Discount", `-${money(booking.discount)}`) : ""}
+          ${row("Total paid", money(booking.total), true)}
+        </table>
+        <p style="color:#999;font-size:12px;margin-top:20px;">Payment ID: ${paymentIntentId}</p>
+        <p style="color:#999;font-size:12px;">Thanks for using Passtime.</p>
+      </div>`;
+    await sendEmail({
+      to: member.email,
+      subject: "Your Passtime payment receipt",
+      html,
+      idempotencyKey: `receipt/${paymentIntentId}`,
+    });
+    log("log", "receipt.email.sent", { bookingId: booking.bookingId, memberUid: booking.memberUid });
+  } catch (e) {
+    log("error", "receipt.email.failed", { bookingId: booking.bookingId, message: e.message });
+  }
 }
 
 // ── Payment Failed ────────────────────────────────────────────────────────────
