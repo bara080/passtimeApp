@@ -433,9 +433,12 @@ exports.pay = async (req, res, next) => {
 
     const HostModel = getUserModel("host");
     const host = await HostModel.findOne({ uid: booking.hostUid }).select("stripeAccountId");
-    if (!host?.stripeAccountId) {
-      return error(res, 400, "Host has not completed Stripe onboarding.");
-    }
+    // Product decision (see product.md [Stripe]): the PLATFORM collects the full
+    // payment up front, so the member can always pay — even if the host hasn't
+    // finished Stripe onboarding. The host's share is paid out later via a
+    // separate Transfer (transfer_group below). So we intentionally DO NOT reject
+    // when host.stripeAccountId is missing.
+    // old: if (!host?.stripeAccountId) return error(res, 400, "Host has not completed Stripe onboarding.");
 
     // Reuse the existing PaymentIntent if a payment attempt is already in flight.
     if (booking.paymentIntentId) {
@@ -461,19 +464,33 @@ exports.pay = async (req, res, next) => {
     // twice. See /Users/bara080/bara/passtime/logout-idempotency.md P0#1.
     // FOLLOW-UP: if pay is ever partial-refunded and re-attempted, bump the
     // suffix (e.g. `pay/<id>/<total>/v2`) so a fresh PI is created.
-    const stripeIdemKey = `pay/${booking.bookingId}/${booking.total}`;
+    // Suffix bumped to `/v2-platform` because the PaymentIntent shape changed
+    // (destination charge → platform charge). Reusing the old key with new params
+    // makes Stripe reject with "same idempotency key, different parameters".
+    const stripeIdemKey = `pay/${booking.bookingId}/${booking.total}/v2-platform`;
     // old: const paymentIntent = await stripe.paymentIntents.create({ ... });
+    // Separate charges & transfers: the PLATFORM collects the full amount now
+    // (no transfer_data / application_fee → not a destination charge), so the
+    // charge never depends on the host being payout-ready. The host's cut
+    // (total − platformFee) is transferred later, matched by transfer_group,
+    // once they've completed Stripe onboarding. See product.md [Stripe].
+    // old (destination charge — failed 502 when host wasn't onboarded):
+    //   application_fee_amount: platformFee,
+    //   transfer_data: { destination: host.stripeAccountId },
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: booking.total,
         currency: booking.currency || "usd",
         payment_method_types: ["card"],
-        application_fee_amount: platformFee,
-        transfer_data: { destination: host.stripeAccountId },
+        transfer_group: `booking_${booking.bookingId}`,
         metadata: {
           bookingId: booking.bookingId,
           memberUid: booking.memberUid,
           hostUid: booking.hostUid,
+          // Carried for the deferred host payout (Transfer) once host is onboarded.
+          platformFee: String(platformFee),
+          hostPayoutAmount: String(booking.total - platformFee),
+          hostStripeAccountId: host?.stripeAccountId || "",
         },
       },
       { idempotencyKey: stripeIdemKey }

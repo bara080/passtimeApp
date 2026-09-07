@@ -14,7 +14,15 @@ export function useChatList(enabled: boolean) {
     enabled,
     staleTime: 0,
     refetchOnWindowFocus: true,
-    refetchInterval: enabled ? 5000 : false,
+    // A 401/5xx must not fan out into React Query's default 3 immediate retries
+    // per poll — that was multiplying the /chats request flood.
+    retry: false,
+    // old: refetchInterval: enabled ? 5000 : false,
+    // Pause polling while the last poll is erroring (e.g. auth lost / token expiry)
+    // so we don't hammer the API with 401s and trip the refresh-rotation race.
+    // Resumes automatically once `enabled` flips (re-auth) or a poll succeeds again.
+    refetchInterval: (query) =>
+      enabled && query.state.status !== "error" ? 5000 : false,
     refetchIntervalInBackground: false,
   });
 }

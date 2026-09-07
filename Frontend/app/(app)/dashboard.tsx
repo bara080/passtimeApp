@@ -1,5 +1,7 @@
-import { View, ScrollView, ActivityIndicator, Text, RefreshControl } from "react-native";
+import { useEffect } from "react";
+import { View, ScrollView, ActivityIndicator, Text, RefreshControl, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Sentry from "@sentry/react-native";
 import { useRouter, type Href } from "expo-router";
 import { useAuth } from "@/context/AuthProvider";
 import { useHostDashboard } from "@/services/hostDashboard/hooks";
@@ -35,6 +37,14 @@ export default function HostDashboardScreen() {
   const nextUpcoming = upcoming.data?.[0];
   const activeBooking = current.data?.[0];
 
+  // Report dashboard load failures to Sentry so silent "Could not load" errors
+  // (e.g. auth/token issues) are visible in monitoring instead of dead-ending.
+  useEffect(() => {
+    if (dashboard.isError && dashboard.error) {
+      Sentry.captureException(dashboard.error, { tags: { screen: "host_dashboard" } });
+    }
+  }, [dashboard.isError, dashboard.error]);
+
   const openChat = async (bookingId: string) => {
     try {
       const res = await createChat.mutateAsync(bookingId);
@@ -68,7 +78,20 @@ export default function HostDashboardScreen() {
         {dashboard.isPending ? (
           <ActivityIndicator style={{ marginTop: 40 }} color={palette.accent} />
         ) : dashboard.isError || !dashboard.data ? (
-          <Text className="text-sm text-red-500 mt-6">Could not load dashboard.</Text>
+          // old: <Text className="text-sm text-red-500 mt-6">Could not load dashboard.</Text>
+          <View className="mt-16 items-center gap-3">
+            <Text className="text-[15px] text-center" style={{ color: palette.textMuted }}>
+              We couldn&apos;t load your dashboard.
+            </Text>
+            <Pressable
+              onPress={() => dashboard.refetch()}
+              accessibilityRole="button"
+              className="px-6 py-2.5 rounded-full"
+              style={{ backgroundColor: palette.accent }}
+            >
+              <Text className="text-white font-semibold">Retry</Text>
+            </Pressable>
+          </View>
         ) : (
           <>
             {/* v1 — verification alerts (only render what's incomplete) */}

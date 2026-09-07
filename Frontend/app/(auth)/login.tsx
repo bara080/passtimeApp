@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { View, Text, Pressable, Alert } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 import { AuthScreen, AuthTitle, FormField, GradientButton, SocialAuthRow, FooterLink } from "@/components/auth";
 import { useAuth } from "@/context/AuthProvider";
+import { useAlertModal } from "@/context/AlertModalProvider";
 import { useSocialAuth } from "@/hooks/useSocialAuth";
 import { isValidEmail } from "@/utils/validation";
 import type { UserRole } from "@/services/auth/types";
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const alertModal = useAlertModal();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<UserRole>("member");
@@ -17,14 +19,22 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!isValidEmail(email) || !password) {
-      Alert.alert("Error", "Please enter a valid email and your password.");
+      alertModal.show({
+        type: "error",
+        title: "Missing details",
+        message: "Please enter a valid email and your password.",
+      });
       return;
     }
     setLoading(true);
     const ok = await login({ email: email.trim().toLowerCase(), password, role });
     setLoading(false);
     if (!ok) {
-      Alert.alert("Login Failed", "Invalid email or password. Please try again.");
+      alertModal.show({
+        type: "error",
+        title: "Login failed",
+        message: "Either your email or password is invalid. Please check again.",
+      });
     }
   };
 

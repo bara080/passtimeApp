@@ -10,8 +10,9 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams, type Href } from "expo-router";
+import { useRouter, useLocalSearchParams, Redirect, type Href } from "expo-router";
 import { Search, X } from "lucide-react-native";
+import { useAuth } from "@/context/AuthProvider";
 import { BackButton } from "@/components/ui/BackButton";
 import { HostCard } from "@/components/home";
 import { EXPERIENCE_TYPES } from "@/components/onboarding";
@@ -30,6 +31,7 @@ const PAD = 21;
  *  city, or experience. Reuses the Home discovery card language (Figma 1288:6397). */
 export default function ExploreScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { palette } = useThemeColors();
   const { width } = useWindowDimensions();
   const params = useLocalSearchParams<{ category?: string }>();
@@ -61,6 +63,12 @@ export default function ExploreScreen() {
     addRecentlyViewed(uid);
     router.push({ pathname: "/(app)/book/[hostUid]", params: { hostUid: uid, hostName: name } } as unknown as Href);
   };
+
+  // Explore is a member-only surface (browsing hosts). Hosts must never land here
+  // — per the Figma, a host cannot see other hosts. Bounce them to their dashboard.
+  if (user?.role === "host") {
+    return <Redirect href={"/(app)/dashboard" as Href} />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-[#0d0d0d]">

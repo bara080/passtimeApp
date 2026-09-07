@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { View, ScrollView, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, type Href } from "expo-router";
+import { useRouter, Redirect, type Href } from "expo-router";
 import { useAuth } from "@/context/AuthProvider";
 import { useToast } from "@/context/ToastProvider";
 import {
@@ -111,6 +111,13 @@ export default function HomeScreen() {
   const recentlyViewedHosts = recentUids
     .map((uid) => loadedHosts.find((h) => h.uid === uid))
     .filter((h): h is HostCard => Boolean(h));
+
+  // The member Home (browsing hosts) is member-only. A host who lands on the
+  // (app) group's default route must be sent to their dashboard, never shown
+  // other hosts (Figma: hosts cannot see hosts).
+  if (user?.role === "host") {
+    return <Redirect href={"/(app)/dashboard" as Href} />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-[#0d0d0d]">

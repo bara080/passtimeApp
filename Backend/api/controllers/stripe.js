@@ -63,7 +63,10 @@ exports.createConnectAccount = async (req, res, next) => {
       type: "account_onboarding",
     });
 
-    return success(res, "Onboarding link created.", { url: accountLink.url, accountId });
+    // Field name must match the client contract (ConnectOnboardingResponse.onboardingUrl);
+    // it previously returned `url`, so the client read `onboardingUrl` as undefined and
+    // left the "Continue to Stripe" button permanently disabled.
+    return success(res, "Onboarding link created.", { onboardingUrl: accountLink.url, accountId });
   } catch (err) {
     next(err);
   }
@@ -231,7 +234,8 @@ exports.startPayoutOnboarding = async (req, res, next) => {
       type: "account_onboarding",
     });
 
-    return success(res, "Onboarding link refreshed.", { url: accountLink.url });
+    // Match client contract (refreshOnboardingLink expects { onboardingUrl }).
+    return success(res, "Onboarding link refreshed.", { onboardingUrl: accountLink.url });
   } catch (err) {
     next(err);
   }

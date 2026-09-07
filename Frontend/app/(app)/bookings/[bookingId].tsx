@@ -17,6 +17,7 @@ import { useCreateChat } from "@/services/chat/hooks";
 import { useStripe } from "@stripe/stripe-react-native";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { useToast } from "@/context/ToastProvider";
+import { useAlertModal } from "@/context/AlertModalProvider";
 import { formatMoney } from "@/utils/bookingMoney";
 
 function formatDate(iso: string): string {
@@ -37,6 +38,7 @@ function humanDuration(minutes: number): string {
 export default function BookingDetailsScreen() {
   const router = useRouter();
   const toast = useToast();
+  const alertModal = useAlertModal();
   const { palette } = useThemeColors();
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>();
 
@@ -118,7 +120,15 @@ export default function BookingDetailsScreen() {
       toast.success("Payment complete", "Your booking is confirmed.");
       details.refetch();
     } catch (err) {
-      toast.error("Could not start payment", err instanceof Error ? err.message : "Please try again.");
+      // Friendly, centered message instead of a raw "status code 5xx" toast.
+      alertModal.show({
+        type: "error",
+        title: "Payment couldn't start",
+        message:
+          err instanceof Error && !/status code/i.test(err.message)
+            ? err.message
+            : "Something went wrong starting your payment. Please try again in a moment.",
+      });
     } finally {
       setPaying(false);
     }

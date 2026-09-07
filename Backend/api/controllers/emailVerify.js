@@ -4,6 +4,7 @@ const { success, error } = require("../utils/responseFormatter");
 const { getUserModel, getConnection } = require("../config/db");
 const { sendEmail, sendTemplate } = require("../config/resend");
 const { renderTemplate } = require("../emails");
+const { testOtpAllowed } = require("../utils/testOtp");
 
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 3;
@@ -93,6 +94,15 @@ exports.verifyEmailCode = async (req, res, next) => {
     const { user, role } = result;
     const conn = getConnection(role);
     const Verification = conn.model("Verification");
+
+    // Secure test-OTP hook: allow-listed test accounts only, opt-in via env, inert
+    // in production, fail-closed at boot. See api/utils/testOtp.js.
+    if (testOtpAllowed(email.toLowerCase().trim(), code, "email")) {
+      const UserModel = getUserModel(role);
+      await UserModel.updateOne({ email: email.toLowerCase().trim() }, { emailVerified: true });
+      await Verification.deleteOne({ email: email.toLowerCase().trim() }).catch(() => {});
+      return success(res, "Email verified (test account).", { verified: true });
+    }
 
     const entry = await Verification.findOne({ email: email.toLowerCase().trim() });
     if (!entry) return error(res, 400, "No verification request found. Please resend the code.");

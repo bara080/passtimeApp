@@ -13,8 +13,13 @@ const ChatContext = createContext<Ctx>({ chats: [], unreadCount: 0, loading: fal
 
 /** Wraps `GET /chats` so the Messages tab badge and the list screen share one source of truth. */
 export function ChatProvider({ children }: PropsWithChildren) {
-  const { user } = useAuth();
-  const feed = useChatList(Boolean(user));
+  const { session, initializing } = useAuth();
+  // old: const feed = useChatList(Boolean(user));
+  // Poll only when we actually hold a session with an access token. `user` alone
+  // could be truthy while tokens are absent/cleared (startup race, post-logout,
+  // failed refresh) — which sent unauthenticated /chats requests in a 401 flood.
+  // `session` is nulled by clearTokensAndLogout, so polling stops the moment auth drops.
+  const feed = useChatList(!initializing && Boolean(session?.accessToken));
 
   const value = useMemo<Ctx>(
     () => ({

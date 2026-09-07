@@ -7,6 +7,7 @@ const { getSession } = require("../utils/redisSession");
 const { normalizePhone } = require("../utils/normalizePhone");
 const { telnyxClient, verifyProfileId } = require("../config/telnyx");
 const { getRedis, isRedisReady } = require("../config/redis");
+const { testOtpAllowed, isTestOtpAccount } = require("../utils/testOtp");
 
 const OTP_DIGITS = 5;
 
@@ -27,6 +28,15 @@ exports.sendOtp = async (req, res, next) => {
   try {
     const { phoneNumber } = req.body;
     if (!phoneNumber) return error(res, 400, "phoneNumber is required.");
+
+    // Secure test-OTP hook: allow-listed test phones skip the real Telnyx send.
+    // Opt-in via env, inert in production, fail-closed at boot. See utils/testOtp.js.
+    if (isTestOtpAccount(String(phoneNumber).trim(), "phone")) {
+      return success(res, "OTP sent (test account — use the configured test code).", {
+        requestId: "test",
+        telnyxStatus: "test",
+      });
+    }
 
     if (!telnyxClient) {
       return error(res, 500, "OTP provider not configured.", {
@@ -103,6 +113,13 @@ exports.verifyOtp = async (req, res, next) => {
     }
     if (!new RegExp(`^\\d{${OTP_DIGITS}}$`).test(String(code).trim())) {
       return error(res, 400, `OTP must be ${OTP_DIGITS} digits.`);
+    }
+
+    // Secure test-OTP hook: allow-listed test phones + configured code only.
+    // Opt-in via env, inert in production, fail-closed at boot. See utils/testOtp.js.
+    if (testOtpAllowed(String(phoneNumber).trim(), code, "phone")) {
+      await persistVerifiedPhone(req, String(phoneNumber).trim());
+      return success(res, "Phone verified (test account).", { verified: true });
     }
 
     if (!telnyxClient) {

@@ -15,6 +15,7 @@ import { StripeProvider } from "@stripe/stripe-react-native";
 import { QueryProvider } from "@/components/queryproviders";
 import { SessionProvider } from "@/context/AuthProvider";
 import { ToastProvider } from "@/context/ToastProvider";
+import { AlertModalProvider } from "@/context/AlertModalProvider";
 import { NotificationProvider } from "@/context/NotificationProvider";
 import { ChatProvider } from "@/context/ChatProvider";
 
@@ -28,7 +29,12 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: __DEV__ ? 1.0 : 0.1,
   enableLogs: true,
-  integrations: [Sentry.mobileReplayIntegration()],
+  // old: integrations: [Sentry.mobileReplayIntegration()],
+  integrations: [
+    Sentry.mobileReplayIntegration(),
+    // Forward console.warn/console.error to Sentry Logs (enableLogs above must be on).
+    Sentry.consoleLoggingIntegration({ levels: ["warn", "error"] }),
+  ],
   enableNativeFramesTracking: !isRunningInExpoGo(),
   environment: __DEV__ ? "development" : "production",
 });
@@ -66,15 +72,17 @@ function RootLayout() {
       <StatusBar style="auto" />
       <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY} merchantIdentifier="merchant.com.passtime.app">
         <QueryProvider>
-          <ToastProvider>
-            <SessionProvider>
-              <NotificationProvider>
-                <ChatProvider>
-                  <Stack screenOptions={{ headerShown: false }} />
-                </ChatProvider>
-              </NotificationProvider>
-            </SessionProvider>
-          </ToastProvider>
+          <AlertModalProvider>
+            <ToastProvider>
+              <SessionProvider>
+                <NotificationProvider>
+                  <ChatProvider>
+                    <Stack screenOptions={{ headerShown: false }} />
+                  </ChatProvider>
+                </NotificationProvider>
+              </SessionProvider>
+            </ToastProvider>
+          </AlertModalProvider>
         </QueryProvider>
       </StripeProvider>
     </ThemeProvider>

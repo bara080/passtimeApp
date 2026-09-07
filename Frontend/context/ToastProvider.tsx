@@ -1,15 +1,5 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-  type PropsWithChildren,
-} from "react";
-import { Animated, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ToastView } from "@/components/ui/ToastView";
+import { createContext, useContext, useMemo, type PropsWithChildren } from "react";
+import { useAlertModal } from "@/context/AlertModalProvider";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -17,10 +7,11 @@ export type ToastOptions = {
   type?: ToastType;
   title: string;
   message?: string;
-  /** Auto-dismiss delay in ms. Default 3500. */
+  /** Auto-dismiss delay in ms. Forwarded to the modal (default there ~6s). */
   duration?: number;
 };
 
+// Kept for backwards-compat with any importers of this type.
 export type ToastData = Required<Pick<ToastOptions, "title">> & {
   id: string;
   type: ToastType;
@@ -41,76 +32,28 @@ const ToastContext = createContext<ToastContextType>({
   info: () => {},
 });
 
-const DEFAULT_DURATION = 3500;
-const MAX_VISIBLE = 3;
-
+/**
+ * Product decision: ALL app messages surface through the single centered global
+ * modal (`AlertModalProvider`), not a top toast. This provider is now a thin
+ * compatibility shim so every existing `useToast().error/success/info(...)` call
+ * site keeps working unchanged but renders the centered modal. Requires
+ * AlertModalProvider to be an ancestor (see app/_layout.tsx).
+ */
 export function ToastProvider({ children }: PropsWithChildren) {
-  const [toasts, setToasts] = useState<ToastData[]>([]);
-  const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const counter = useRef(0);
-  const slide = useRef(new Animated.Value(0)).current;
-  const insets = useSafeAreaInsets();
-
-  const dismiss = useCallback((id: string) => {
-    const timer = timers.current.get(id);
-    if (timer) clearTimeout(timer);
-    timers.current.delete(id);
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const show = useCallback(
-    ({ type = "info", title, message, duration = DEFAULT_DURATION }: ToastOptions) => {
-      const id = `toast-${++counter.current}`;
-      setToasts((prev) => [...prev.slice(-(MAX_VISIBLE - 1)), { id, type, title, message }]);
-      Animated.spring(slide, { toValue: 1, useNativeDriver: true, speed: 20 }).start();
-      timers.current.set(
-        id,
-        setTimeout(() => dismiss(id), duration)
-      );
-    },
-    [dismiss, slide]
-  );
+  const alertModal = useAlertModal();
 
   const value = useMemo<ToastContextType>(
     () => ({
-      show,
-      success: (title, message) => show({ type: "success", title, message }),
-      error: (title, message) => show({ type: "error", title, message }),
-      info: (title, message) => show({ type: "info", title, message }),
+      show: ({ type = "info", title, message, duration }: ToastOptions) =>
+        alertModal.show({ type, title, message, duration }),
+      success: (title, message) => alertModal.show({ type: "success", title, message }),
+      error: (title, message) => alertModal.show({ type: "error", title, message }),
+      info: (title, message) => alertModal.show({ type: "info", title, message }),
     }),
-    [show]
+    [alertModal]
   );
 
-  return (
-    <ToastContext.Provider value={value}>
-      {children}
-      {toasts.length > 0 ? (
-        <Animated.View
-          pointerEvents="box-none"
-          style={{
-            position: "absolute",
-            top: insets.top,
-            bottom: insets.bottom,
-            left: 0,
-            right: 0,
-            justifyContent: "center",
-            opacity: slide,
-            transform: [
-              {
-                scale: slide.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1] }),
-              },
-            ],
-          }}
-        >
-          <View pointerEvents="box-none">
-            {toasts.map((toast) => (
-              <ToastView key={toast.id} toast={toast} onDismiss={dismiss} />
-            ))}
-          </View>
-        </Animated.View>
-      ) : null}
-    </ToastContext.Provider>
-  );
+  return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
 }
 
 export function useToast() {
